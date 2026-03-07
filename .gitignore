@@ -1,0 +1,24 @@
+# Environment variables / API Keys
+.env
+
+# Python compilation files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+bot.log
+
+# IDEs
+.vscode/
+.idea/
+
+# Package environments
+.venv/
+venv/
+env/
