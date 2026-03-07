@@ -29,7 +29,9 @@ async def main_loop():
     last_heartbeat = time.time()
     
     # State tracking
-    current_position = None # Can be "LONG_SPREAD", "SHORT_SPREAD"
+    # current_position can be None or a dict holding entry trade details:
+    # {"type": "LONG_SPREAD"|"SHORT_SPREAD", "y_trade": dict, "x_trade": dict}
+    current_position = None
     
     while not killswitch.is_triggered:
         try:
@@ -83,31 +85,58 @@ async def main_loop():
             # 3. Execution & Position Sizing
             pos_size = calculate_position_size(settings.PAPER_EQUITY)
             
-            if signal == "SELL_SPREAD" and current_position != "SHORT_SPREAD":
+            if signal == "SELL_SPREAD" and (current_position is None or current_position["type"] != "SHORT_SPREAD"):
                 logger.info("Executing SELL_SPREAD")
-                engine.execute_trade(symbol_y, "sell", pos_size)
-                engine.execute_trade(symbol_x, "buy", pos_size)
-                current_position = "SHORT_SPREAD"
-                send_telegram_message(f"📉 <b>Entry (Short Spread)</b>\nZ-Score: {current_z:.2f}\nAction: Sold {symbol_y}, Bought {symbol_x}")
+                trade_y = engine.execute_trade(symbol_y, "sell", pos_size)
+                trade_x = engine.execute_trade(symbol_x, "buy", pos_size)
                 
-            elif signal == "BUY_SPREAD" and current_position != "LONG_SPREAD":
+                if trade_y and trade_x:
+                    current_position = {
+                        "type": "SHORT_SPREAD",
+                        "y_trade": trade_y,
+                        "x_trade": trade_x
+                    }
+                    send_telegram_message(f"📉 <b>Entry (Short Spread)</b>\nZ-Score: {current_z:.2f}\nAction: Sold {symbol_y}, Bought {symbol_x}")
+                
+            elif signal == "BUY_SPREAD" and (current_position is None or current_position["type"] != "LONG_SPREAD"):
                 logger.info("Executing BUY_SPREAD")
-                engine.execute_trade(symbol_y, "buy", pos_size)
-                engine.execute_trade(symbol_x, "sell", pos_size)
-                current_position = "LONG_SPREAD"
-                send_telegram_message(f"📈 <b>Entry (Long Spread)</b>\nZ-Score: {current_z:.2f}\nAction: Bought {symbol_y}, Sold {symbol_x}")
+                trade_y = engine.execute_trade(symbol_y, "buy", pos_size)
+                trade_x = engine.execute_trade(symbol_x, "sell", pos_size)
+                
+                if trade_y and trade_x:
+                    current_position = {
+                        "type": "LONG_SPREAD",
+                        "y_trade": trade_y,
+                        "x_trade": trade_x
+                    }
+                    send_telegram_message(f"📈 <b>Entry (Long Spread)</b>\nZ-Score: {current_z:.2f}\nAction: Bought {symbol_y}, Sold {symbol_x}")
                 
             elif signal == "EXIT_SPREAD" and current_position is not None:
                 logger.info("Executing EXIT_SPREAD")
+                pos_type = current_position["type"]
+                entry_y = current_position["y_trade"]
+                entry_x = current_position["x_trade"]
+                
                 # Flattening out the positions
-                if current_position == "SHORT_SPREAD":
-                    engine.execute_trade(symbol_y, "buy", pos_size)
-                    engine.execute_trade(symbol_x, "sell", pos_size)
-                else:
-                    engine.execute_trade(symbol_y, "sell", pos_size)
-                    engine.execute_trade(symbol_x, "buy", pos_size)
+                if pos_type == "SHORT_SPREAD":
+                    # We had sold Y and bought X. Now we buy Y and sell X.
+                    exit_y = engine.execute_trade(symbol_y, "buy", pos_size)
+                    exit_x = engine.execute_trade(symbol_x, "sell", pos_size)
+                    
+                    pnl_y = engine.log_closed_trade(symbol_y, is_long=False, amount_base=entry_y['amount_base'], entry_price=entry_y['price'], exit_price=exit_y['price']) if exit_y else 0
+                    pnl_x = engine.log_closed_trade(symbol_x, is_long=True, amount_base=entry_x['amount_base'], entry_price=entry_x['price'], exit_price=exit_x['price']) if exit_x else 0
+                    
+                else: # LONG_SPREAD
+                    # We had bought Y and sold X. Now we sell Y and buy X.
+                    exit_y = engine.execute_trade(symbol_y, "sell", pos_size)
+                    exit_x = engine.execute_trade(symbol_x, "buy", pos_size)
+
+                    pnl_y = engine.log_closed_trade(symbol_y, is_long=True, amount_base=entry_y['amount_base'], entry_price=entry_y['price'], exit_price=exit_y['price']) if exit_y else 0
+                    pnl_x = engine.log_closed_trade(symbol_x, is_long=False, amount_base=entry_x['amount_base'], entry_price=entry_x['price'], exit_price=exit_x['price']) if exit_x else 0
+
+                total_pnl = pnl_y + pnl_x
                 current_position = None
-                send_telegram_message(f"✅ <b>Exit</b>\nZ-Score returned to ~0 ({current_z:.2f}). Positions closed.")
+                send_telegram_message(f"✅ <b>Exit</b>\nZ-Score returned to ~0 ({current_z:.2f}). Positions closed.\n💰 <b>Total PnL:</b> ${total_pnl:.2f}")
             
             # On success, clear the killswitch failures
             killswitch.record_success()
