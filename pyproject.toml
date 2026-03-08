@@ -10,7 +10,8 @@ dependencies = [
     "statsmodels",
     "python-telegram-bot",
     "pydantic-settings",
-    "loguru"
+    "loguru",
+    "websockets>=16.0",
 ]
 
 [build-system]

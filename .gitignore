@@ -20,5 +20,8 @@ bot.log
 
 # Package environments
 .venv/
-venv/
+.env
+trading_bot.db
+state.json
+trades.csv/
 env/
