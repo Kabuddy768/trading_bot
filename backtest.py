@@ -36,6 +36,8 @@ class BacktestTrade:
     confluence_score: int = 0
     gross_pnl: float = 0.0
     net_pnl: float = 0.0
+    equity_at_entry: float = 0.0
+    position_size: float = 0.0
 
 @dataclass  
 class BacktestResult:
@@ -128,15 +130,15 @@ class ICTBacktester:
         self.fee_rate = PAPER_FEE_RATE
         self.risk_per_trade = MAX_RISK_PER_TRADE
 
-    def fetch_data(self, htf_limit: int = 500, mtf_limit: int = 500) -> tuple:
-        """Fetch a large historical dataset for backtesting."""
+    def fetch_data(self, htf_limit: int = 500, mtf_limit: int = 500, since_date: str = None, until_date: str = None) -> tuple:
+        """Fetch a historical dataset for backtesting."""
         print(f"Fetching historical data for {self.symbol}...")
-        df_htf = fetch_historical_data("binance", self.symbol, settings.BIAS_TIMEFRAME, htf_limit)
-        df_mtf = fetch_historical_data("binance", self.symbol, settings.SETUP_TIMEFRAME, mtf_limit)
+        df_htf = fetch_historical_data("binance", self.symbol, settings.BIAS_TIMEFRAME, htf_limit, since_date, until_date)
+        df_mtf = fetch_historical_data("binance", self.symbol, settings.SETUP_TIMEFRAME, mtf_limit, since_date, until_date)
         return df_htf, df_mtf
 
-    def run(self, htf_limit: int = 500, mtf_limit: int = 500) -> BacktestResult:
-        df_htf, df_mtf = self.fetch_data(htf_limit, mtf_limit)
+    def run(self, htf_limit: int = 500, mtf_limit: int = 500, since_date: str = None, until_date: str = None) -> BacktestResult:
+        df_htf, df_mtf = self.fetch_data(htf_limit, mtf_limit, since_date, until_date)
         
         if df_htf.empty or df_mtf.empty:
             print("ERROR: Could not fetch data.")
@@ -172,6 +174,18 @@ class ICTBacktester:
                 hit_tp = (direction == "LONG" and candle['high'] >= active_trade.tp_price) or \
                          (direction == "SHORT" and candle['low'] <= active_trade.tp_price)
 
+                if hit_sl and hit_tp:
+                    # Ambiguous collision: determine which is closer to the candle OPEN
+                    open_px = candle['open']
+                    dist_to_sl = abs(open_px - active_trade.sl_price)
+                    dist_to_tp = abs(open_px - active_trade.tp_price)
+                    
+                    # The closer one is assumed to have hit first
+                    if dist_to_tp < dist_to_sl:
+                        hit_sl = False # TP hit first
+                    else:
+                        hit_tp = False # SL hit first
+
                 if hit_sl:
                     active_trade.exit_price = active_trade.sl_price
                     active_trade.exit_reason = "STOP_LOSS"
@@ -183,14 +197,8 @@ class ICTBacktester:
 
                 if active_trade.exit_reason != "OPEN":
                     # Correct Risk/Position Sizing
-                    # If we hit SL, we want to lose exactly (equity * risk_per_trade)
-                    risk_usd = equity * self.risk_per_trade
-                    sl_dist = abs(active_trade.entry_price - active_trade.sl_price)
-                    
-                    if sl_dist > 0:
-                        amount_base = risk_usd / sl_dist
-                    else:
-                        amount_base = 0 # Invalid trade setup
+                    # We lock in the entry constraints rather than using current equity
+                    amount_base = active_trade.position_size
 
                     if direction == "LONG":
                         gross = (active_trade.exit_price - active_trade.entry_price) * amount_base
@@ -238,6 +246,14 @@ class ICTBacktester:
 
                 setup = score_setup(self.symbol, current_price, bias, fvgs, active_obs, breakers, active_zones)
 
+                # CRITICAL SIZING FIX: Size is determined now at Entry using live equity
+                sl_dist = abs(setup.entry_price - setup.sl_price)
+                if sl_dist == 0:
+                    sl_dist = 1.0 # Prevent Division by Zero
+                    
+                risk_usd = self.current_equity * self.risk_per_trade if hasattr(self, 'current_equity') else equity * self.risk_per_trade
+                trade_size = risk_usd / sl_dist
+                
                 if setup:
                     active_trade = BacktestTrade(
                         symbol=self.symbol,
@@ -246,7 +262,9 @@ class ICTBacktester:
                         sl_price=setup.sl_price,
                         tp_price=setup.tp_price,
                         entry_idx=i,
-                        confluence_score=setup.confluence_score
+                        confluence_score=setup.confluence_score,
+                        equity_at_entry=equity,
+                        position_size=trade_size
                     )
                     result.trades.append(active_trade)
 
@@ -278,14 +296,14 @@ def run_multi_symbol_backtest():
     print("\n🔍 Running ICT Strategy Backtest")
     print("="*50)
     
-    # We fetch a larger chunk of data to simulate more trades
-    HTF_LIMIT = 1000
-    MTF_LIMIT = 1500
+    # We fetch data based on the explicit date bounds to cover Q1 2026
+    SINCE = "2026-01-01"
+    UNTIL = "2026-03-10"
 
     for symbol in symbols:
         print(f"\n--- {symbol} ---")
         backtester = ICTBacktester(symbol)
-        result = backtester.run(htf_limit=HTF_LIMIT, mtf_limit=MTF_LIMIT)
+        result = backtester.run(since_date=SINCE, until_date=UNTIL)
         result.print_summary()
         all_results[symbol] = result
     

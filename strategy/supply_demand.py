@@ -39,6 +39,11 @@ def detect_zones(df: pd.DataFrame, symbol: str, min_impulse_pips: float = 10.0) 
             base_idx = i - 1
             base_candle = df.iloc[base_idx]
             
+            # CRITICAL FIX: Ensure the base is actually a consolidation (small body), not just another huge candle
+            base_body_pips = abs(base_candle['close'] - base_candle['open']) / pip_value
+            if base_body_pips > (min_impulse_pips * 0.4):
+                continue # The base is too volatile, this isn't a clean S/D zone
+            
             zone_type = "DEMAND" if candle['close'] > candle['open'] else "SUPPLY"
             
             # Define zone boundaries based on the base candle

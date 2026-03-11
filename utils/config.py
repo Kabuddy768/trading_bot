@@ -52,8 +52,18 @@ class Settings(BaseSettings):
         "BNB/USDT": 1.0,    # SL=$5,   TP=$20
         "SOL/USDT": 0.5     # SL=$2.5, TP=$10
     }
-    SL_PIPS: int = 5                 # Stop Loss in pips
-    TP_PIPS: int = 20                # Take Profit in pips
+    SL_PIPS_BY_SYMBOL: dict = {
+        "BTC/USDT": 5,
+        "ETH/USDT": 10,
+        "BNB/USDT": 15,
+        "SOL/USDT": 20
+    }
+    TP_PIPS_BY_SYMBOL: dict = {
+        "BTC/USDT": 20,
+        "ETH/USDT": 40,
+        "BNB/USDT": 60,
+        "SOL/USDT": 80
+    }
 
     
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

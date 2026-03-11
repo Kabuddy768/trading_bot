@@ -23,8 +23,8 @@ def calculate_pip_levels(entry: float, direction: str, symbol: str) -> tuple[flo
     """
     from risk.manager import get_pip_value
     multiplier = get_pip_value(symbol)
-    sl_dist = settings.SL_PIPS * multiplier
-    tp_dist = settings.TP_PIPS * multiplier
+    sl_dist = settings.SL_PIPS_BY_SYMBOL.get(symbol, 10) * multiplier
+    tp_dist = settings.TP_PIPS_BY_SYMBOL.get(symbol, 30) * multiplier
     
     if direction == "LONG":
         sl = entry - sl_dist
@@ -55,20 +55,13 @@ def score_setup(
     primary_zone = "NONE"
     entry_price = current_price
     
-    # Required: HTF Bias alignment
+    # Required: HTF Bias alignment MUST be present based on structure
     if not bias["tradeable"]:
         return None
         
     direction = bias["direction"]
-    score += 1
-    confluences.append(f"HTF Bias: {bias['structure']} ({direction})")
+    confluences.append(f"HTF Bias: {bias['structure']} in {bias['zone']}")
     
-    # Premium/Discount alignment
-    if (direction == "LONG" and bias["zone"] == "DISCOUNT") or \
-       (direction == "SHORT" and bias["zone"] == "PREMIUM"):
-        score += 1
-        confluences.append(f"Price in {bias['zone']} zone")
-        
     # FVG
     if fvgs:
         score += 1
@@ -81,10 +74,11 @@ def score_setup(
     if obs:
         score += 1
         confluences.append(f"Order Block present ({len(obs)})")
-        if primary_zone == "NONE":
-            # If no FVG, use OB edge
-            entry_price = obs[0].top if direction == "LONG" else obs[0].bottom
-            primary_zone = "OB"
+        
+        # If overlapping with an FVG, OB proximal edge is a safter, more conservative entry usually
+        ob_entry = obs[0].top if direction == "LONG" else obs[0].bottom
+        entry_price = ob_entry
+        primary_zone = "OB"
             
     # Breaker Block
     if breakers:

@@ -12,24 +12,41 @@ def detect_market_structure(df: pd.DataFrame) -> str:
     Returns:
         "BULLISH" | "BEARISH" | "RANGING"
     """
-    if len(df) < 5:
+    if len(df) < 20:
         return "RANGING"
 
-    # Simplified HH/HL detection using rolling windows or last few pivots
-    # For a more robust version, we could use scipy.signal.find_peaks
+    # Minimal logic for finding local swing highs and lows (5-candle pivot: 2 left, 2 right)
+    highs = df['high'].values
+    lows = df['low'].values
     
-    last_highs = df['high'].iloc[-20:].tolist()
-    last_lows = df['low'].iloc[-20:].tolist()
+    swing_highs = []
+    swing_lows = []
     
-    # Check for Bullish: Price making overall higher highs and higher lows
-    is_bullish = df['high'].iloc[-1] > df['high'].iloc[-10] and df['low'].iloc[-1] > df['low'].iloc[-10]
+    # Needs a minimum of 2 bars on each side
+    for i in range(2, len(df) - 2):
+        # Local High
+        if highs[i] > highs[i-1] and highs[i] > highs[i-2] and \
+           highs[i] > highs[i+1] and highs[i] > highs[i+2]:
+            swing_highs.append(highs[i])
+            
+        # Local Low
+        if lows[i] < lows[i-1] and lows[i] < lows[i-2] and \
+           lows[i] < lows[i+1] and lows[i] < lows[i+2]:
+            swing_lows.append(lows[i])
+
+    if len(swing_highs) < 2 or len(swing_lows) < 2:
+        return "RANGING"
+        
+    # Check Market Structure via latest 2 confirmed swings
+    last_hh = swing_highs[-1] > swing_highs[-2]
+    last_hl = swing_lows[-1] > swing_lows[-2]
     
-    # Check for Bearish: Price making overall lower highs and lower lows
-    is_bearish = df['high'].iloc[-1] < df['high'].iloc[-10] and df['low'].iloc[-1] < df['low'].iloc[-10]
+    last_lh = swing_highs[-1] < swing_highs[-2]
+    last_ll = swing_lows[-1] < swing_lows[-2]
     
-    if is_bullish:
+    if last_hh and last_hl:
         return "BULLISH"
-    elif is_bearish:
+    elif last_lh and last_ll:
         return "BEARISH"
     else:
         return "RANGING"
@@ -45,9 +62,9 @@ def identify_premium_discount(df: pd.DataFrame) -> str:
     if len(df) < 20:
         return "EQUILIBRIUM"
         
-    recent_range = df.iloc[-50:]
-    highest_high = recent_range['high'].max()
-    lowest_low = recent_range['low'].min()
+    # Use the full provided HTF frame context to compute the range
+    highest_high = df['high'].max()
+    lowest_low = df['low'].min()
     current_price = df['close'].iloc[-1]
     
     midpoint = (highest_high + lowest_low) / 2

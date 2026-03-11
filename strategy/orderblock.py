@@ -27,7 +27,7 @@ def detect_order_blocks(df: pd.DataFrame, symbol: str, lookback: int = settings.
     ...
     Returns only UN-mitigated OBs.
     """
-    obs = []
+    obs_dict = {}
     pip_value = get_pip_value(symbol)
     
     # We need some history to find impulse moves
@@ -45,19 +45,19 @@ def detect_order_blocks(df: pd.DataFrame, symbol: str, lookback: int = settings.
             for j in range(i, i - lookback, -1):
                 prev_candle = df.iloc[j]
                 if prev_candle['close'] < prev_candle['open']:
+                    ob_time = prev_candle.name if hasattr(prev_candle, 'name') else None
+                    if ob_time in obs_dict:
+                        break # Already tracked this OB
+                        
                     ob = OrderBlock(
                         type="BULLISH",
                         top=prev_candle['high'],
                         bottom=prev_candle['low'],
-                        formed_at=prev_candle.name if hasattr(prev_candle, 'name') else None,
+                        formed_at=ob_time,
                         is_mitigated=False,
                         strength=body_size_pips
                     )
                     
-                    # Deduplicate: Check if we already have an OB with same top/bottom and formed_at
-                    if any(o.top == ob.top and o.bottom == ob.bottom and o.formed_at == ob.formed_at for o in obs):
-                        break
-
                     # Check if mitigated since formation
                     is_mitigated = False
                     for k in range(j+1, len(df)):
@@ -66,7 +66,7 @@ def detect_order_blocks(df: pd.DataFrame, symbol: str, lookback: int = settings.
                             break
                     
                     if not is_mitigated:
-                        obs.append(ob)
+                        obs_dict[ob_time] = ob
                     break # Found the last opposing candle
                     
         # Bearish OB check
@@ -75,19 +75,19 @@ def detect_order_blocks(df: pd.DataFrame, symbol: str, lookback: int = settings.
             for j in range(i, i - lookback, -1):
                 prev_candle = df.iloc[j]
                 if prev_candle['close'] > prev_candle['open']:
+                    ob_time = prev_candle.name if hasattr(prev_candle, 'name') else None
+                    if ob_time in obs_dict:
+                        break
+
                     ob = OrderBlock(
                         type="BEARISH",
                         top=prev_candle['high'],
                         bottom=prev_candle['low'],
-                        formed_at=prev_candle.name if hasattr(prev_candle, 'name') else None,
+                        formed_at=ob_time,
                         is_mitigated=False,
                         strength=body_size_pips
                     )
                     
-                    # Deduplicate
-                    if any(o.top == ob.top and o.bottom == ob.bottom and o.formed_at == ob.formed_at for o in obs):
-                        break
-
                     # Check if mitigated since formation
                     is_mitigated = False
                     for k in range(j+1, len(df)):
@@ -96,10 +96,10 @@ def detect_order_blocks(df: pd.DataFrame, symbol: str, lookback: int = settings.
                             break
                     
                     if not is_mitigated:
-                        obs.append(ob)
+                        obs_dict[ob_time] = ob
                     break
                     
-    return obs
+    return list(obs_dict.values())
 
 def detect_breaker_blocks(df: pd.DataFrame, symbol: str) -> list[BreakerBlock]:
     """
@@ -108,19 +108,22 @@ def detect_breaker_blocks(df: pd.DataFrame, symbol: str) -> list[BreakerBlock]:
     Returns list of active Breaker Blocks.
     """
     # For breakers, we look for OBs that WERE mitigated by a strong move
-    # This is a bit complex, let's simplify: 
     # A breaker is an OB that price closed BEYOND.
     breakers = []
-    pip_value = get_pip_value(symbol)
     
-    # We'll re-scan for all OBs and see which ones were "broken"
+    # 1. Fetch RAW (unfiltered by mitigation) OBs by hijacking detect_order_blocks logic temporarily
+    # But for efficiency, we really only care about standard OB properties.
+    # To avoid writing an entirely new scanner, we will find ALL blocks and track mitigation status.
     all_potential_obs = []
-    # (Essentially repeating detect_order_blocks but keeping mitigated ones)
-    for i in range(10, len(df) - 1):
+    pip_value = get_pip_value(symbol)
+    lookback = settings.OB_LOOKBACK
+    
+    # Fast re-scan, capturing the index for easy forward tracing
+    for i in range(lookback, len(df) - 1):
         next_candle = df.iloc[i+1]
         body_size_pips = abs(next_candle['close'] - next_candle['open']) / pip_value
         if body_size_pips > 5.0:
-            for j in range(i, i - 10, -1):
+            for j in range(i, i - lookback, -1):
                 prev_candle = df.iloc[j]
                 if (next_candle['close'] > next_candle['open'] and prev_candle['close'] < prev_candle['open']) or \
                    (next_candle['close'] < next_candle['open'] and prev_candle['close'] > prev_candle['open']):
@@ -134,9 +137,10 @@ def detect_breaker_blocks(df: pd.DataFrame, symbol: str) -> list[BreakerBlock]:
                     break
                     
     for ob in all_potential_obs:
-        # Check if price later closed BEYOND the OB
+        # Check if price later closed BEYOND the OB (breaking it)
         broken = False
         broken_idx = -1
+        # Start checking after the impulse candle (ob['idx'] + 2 usually)
         for k in range(ob["idx"] + 1, len(df)):
             if ob["type"] == "BULLISH": # Original OB was bullish, so we look for price breaking BELOW it
                 if df.iloc[k]['close'] < ob["bottom"]:
