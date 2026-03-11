@@ -18,6 +18,7 @@ class ICTTradingBot:
     def __init__(self):
         self.engine = ExecutionEngine()
         self.killswitch = KillSwitch(max_failures=3)
+        self.cooldowns: dict[str, datetime] = {}
         self.state = load_state()
         # load_state already ensures paper_equity and current_positions exist
             
@@ -57,6 +58,13 @@ class ICTTradingBot:
         # Already in position? Skip entry logic
         if symbol in self.state["current_positions"]:
             return
+
+        # Cooldown check: don't re-enter within 5 minutes of a stop loss
+        if symbol in self.cooldowns:
+            elapsed = (datetime.now() - self.cooldowns[symbol]).total_seconds()
+            if elapsed < 300:  # 5 minute cooldown
+                logger.debug(f"{symbol}: In cooldown ({300-elapsed:.0f}s remaining). Skipping.")
+                return
 
         # Fetch Data
         df_htf = fetch_historical_data("binance", symbol, settings.BIAS_TIMEFRAME, settings.BIAS_CANDLE_LIMIT)
@@ -181,6 +189,9 @@ class ICTTradingBot:
 
     async def execute_exit(self, symbol, pos, exit_price, reason):
         # Execute Exit Trade
+        if reason == "STOP_LOSS":
+            self.cooldowns[symbol] = datetime.now()
+            
         side = "sell" if pos["direction"] == "LONG" else "buy"
         # In paper mode, amount_base is what we exit
         amount_usd = pos["amount_base"] * exit_price
