@@ -80,6 +80,23 @@ def check_stop_loss(current_position: Dict[str, Any], current_tickers: Dict[str,
         
     return None
 
+def check_sl_tp(position: dict, current_price: float) -> str | None:
+    """
+    Checks if price has hit the stored SL or TP levels for ICT trades.
+    Returns "STOP_LOSS" | "TAKE_PROFIT" | None
+    """
+    if position["direction"] == "LONG":
+        if current_price <= position["sl_price"]:
+            return "STOP_LOSS"
+        if current_price >= position["tp_price"]:
+            return "TAKE_PROFIT"
+    else:  # SHORT
+        if current_price >= position["sl_price"]:
+            return "STOP_LOSS"
+        if current_price <= position["tp_price"]:
+            return "TAKE_PROFIT"
+    return None
+
 
 def load_state() -> Dict[str, Any]:
     """Loads bot state from database so positions survive restarts."""
