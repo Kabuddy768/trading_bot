@@ -109,7 +109,8 @@ def score_setup(
             primary_zone = "ZONE"
             
     # Check if we meet the minimum requirements
-    if score >= settings.MIN_CONFLUENCES:
+    min_required = settings.MIN_CONFLUENCES_BY_SYMBOL.get(symbol, settings.MIN_CONFLUENCES)
+    if score >= min_required:
         sl, tp = calculate_pip_levels(entry_price, direction, symbol)
         
         return TradeSetup(

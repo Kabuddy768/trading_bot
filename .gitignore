@@ -25,3 +25,16 @@ trading_bot.db
 state.json
 trades.csv/
 env/
+
+# NPM & Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+# Dashboard (Vite + React)
+dashboard/node_modules/
+dashboard/dist/
+dashboard/dist-ssr/
+dashboard/*.local
+dashboard/.eslintcache

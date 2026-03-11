@@ -34,6 +34,12 @@ class Settings(BaseSettings):
 
     # ICT Signal Thresholds
     MIN_CONFLUENCES: int = 2         # Minimum confluences required to enter
+    MIN_CONFLUENCES_BY_SYMBOL: dict = {
+        "BTC/USDT": 4,   # BTC needs much stronger confirmation
+        "ETH/USDT": 3,
+        "BNB/USDT": 3,
+        "SOL/USDT": 3,
+    }
     FVG_MIN_SIZE_PIPS: float = 2.0   # Minimum FVG size to be valid
     OB_LOOKBACK: int = 10            # Candles to look back for Order Blocks
     ZONE_STRENGTH_THRESHOLD: int = 2 # Minimum touches to validate S/D zone
