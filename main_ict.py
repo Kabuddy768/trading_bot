@@ -243,4 +243,8 @@ class ICTTradingBot:
 
 if __name__ == "__main__":
     bot = ICTTradingBot()
-    asyncio.run(bot.run())
+    try:
+        asyncio.run(bot.run())
+    except KeyboardInterrupt:
+        logger.info("🛑 Bot stopped manually.")
+        send_telegram_message("🛑 Bot stopped manually.")

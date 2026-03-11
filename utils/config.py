@@ -41,10 +41,10 @@ class Settings(BaseSettings):
     # Pip-based Risk
     PIP_VALUE_BASE: float = 1.0      # Default 1 pip = $1 USDT
     PIP_VALUES: dict = {
-        "BTC/USDT": 10.0,
-        "ETH/USDT": 1.0,
-        "BNB/USDT": 0.5,
-        "SOL/USDT": 0.10
+        "BTC/USDT": 50.0,   # SL=$250, TP=$1000 — real room to breathe
+        "ETH/USDT": 5.0,    # SL=$25,  TP=$100
+        "BNB/USDT": 1.0,    # SL=$5,   TP=$20
+        "SOL/USDT": 0.5     # SL=$2.5, TP=$10
     }
     SL_PIPS: int = 5                 # Stop Loss in pips
     TP_PIPS: int = 20                # Take Profit in pips
