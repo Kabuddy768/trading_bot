@@ -38,8 +38,14 @@ class Settings(BaseSettings):
     OB_LOOKBACK: int = 10            # Candles to look back for Order Blocks
     ZONE_STRENGTH_THRESHOLD: int = 2 # Minimum touches to validate S/D zone
 
-    # Pip-based Risk (Crypto: 1 pip = $1 USDT for BTC pairs)
-    PIP_VALUE_USDT: float = 1.0      # 1 pip = $1 USDT (adjust per pair)
+    # Pip-based Risk
+    PIP_VALUE_BASE: float = 1.0      # Default 1 pip = $1 USDT
+    PIP_VALUES: dict = {
+        "BTC/USDT": 1.0,
+        "ETH/USDT": 0.1,
+        "BNB/USDT": 0.1,
+        "SOL/USDT": 0.01
+    }
     SL_PIPS: int = 5                 # Stop Loss in pips
     TP_PIPS: int = 20                # Take Profit in pips
 

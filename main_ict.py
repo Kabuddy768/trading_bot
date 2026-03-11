@@ -7,7 +7,7 @@ from utils.database import db
 from utils.telegram import send_telegram_message
 from data.fetcher import fetch_historical_data
 from execution.engine import ExecutionEngine
-from risk.manager import calculate_position_size, check_sl_tp, load_state, save_state
+from risk.manager import calculate_position_size, check_sl_tp, load_state, save_state, KillSwitch, get_pip_value
 from strategy.bias import get_bias
 from strategy.fvg import detect_fvgs, get_active_fvgs
 from strategy.orderblock import detect_order_blocks, detect_breaker_blocks, get_active_ob_near_price
@@ -17,34 +17,40 @@ from strategy.confluence import score_setup
 class ICTTradingBot:
     def __init__(self):
         self.engine = ExecutionEngine()
+        self.killswitch = KillSwitch(max_failures=3)
         self.state = load_state()
-        if "paper_equity" not in self.state:
-            self.state["paper_equity"] = settings.PAPER_EQUITY
-        if "current_positions" not in self.state:
-            self.state["current_positions"] = {} # symbol -> position_dict
+        # load_state already ensures paper_equity and current_positions exist
             
         logger.info("ICT Trading Bot Initialized.")
         send_telegram_message("🤖 ICT Trading Bot Started.")
 
     async def run(self):
         while True:
+            if self.killswitch.is_triggered:
+                logger.critical("Bot stopped by KillSwitch.")
+                send_telegram_message("🔴 <b>CRITICAL: BOT STOPPED BY KILLSWITCH</b>\nConsecutive API failures reached threshold.")
+                break
+
             try:
                 logger.info("--- Starting New Cycle ---")
                 
                 # Step 1: Fetch Data and Step 2-4: Process each symbol
                 for symbol in settings.ICT_SYMBOLS:
+                    if self.killswitch.is_triggered: break
                     await self.process_symbol(symbol)
                 
                 # Step 7: Ongoing Position Monitoring
-                await self.monitor_positions()
+                if not self.killswitch.is_triggered:
+                    await self.monitor_positions()
                 
                 # Save state
-                save_state(self.state.get("current_positions"), self.state["paper_equity"])
+                save_state(self.state["current_positions"], self.state["paper_equity"])
                 
                 logger.info("Cycle Complete. Sleeping for 60 seconds...")
                 await asyncio.sleep(60)
             except Exception as e:
                 logger.error(f"Error in main loop: {e}")
+                self.killswitch.record_failure()
                 await asyncio.sleep(60)
 
     async def process_symbol(self, symbol: str):
@@ -69,12 +75,12 @@ class ICTTradingBot:
         current_price = df_mtf['close'].iloc[-1]
         direction = bias["direction"]
         
-        fvgs = get_active_fvgs(df_mtf, current_price, direction)
-        obs = detect_order_blocks(df_mtf)
-        breakers = detect_breaker_blocks(df_mtf)
-        active_obs = get_active_ob_near_price(obs, breakers, current_price, direction)
-        zones = detect_zones(df_mtf)
-        active_zones = get_zones_near_price(zones, current_price, direction)
+        fvgs = get_active_fvgs(df_mtf, symbol, current_price, direction)
+        obs = detect_order_blocks(df_mtf, symbol)
+        breakers = detect_breaker_blocks(df_mtf, symbol)
+        active_obs = get_active_ob_near_price(obs, breakers, symbol, current_price, direction)
+        zones = detect_zones(df_mtf, symbol)
+        active_zones = get_zones_near_price(zones, symbol, current_price, direction)
 
         # Step 4: Confluence Scoring
         setup = score_setup(symbol, current_price, bias, fvgs, active_obs, breakers, active_zones)
@@ -124,6 +130,10 @@ class ICTTradingBot:
             self.state["current_positions"][setup.symbol] = position
             
             # Telegram Alert
+            pip_value = get_pip_value(setup.symbol)
+            sl_pips = abs(result["price"] - setup.sl_price) / pip_value
+            tp_pips = abs(setup.tp_price - result["price"]) / pip_value
+
             msg = (
                 f"📍 <b>ICT SETUP DETECTED</b>\n"
                 f"━━━━━━━━━━━━━━━━━━━━\n"
@@ -131,9 +141,9 @@ class ICTTradingBot:
                 f"Direction:  {'🟢 LONG' if setup.direction == 'LONG' else '🔴 SHORT'}\n"
                 f"Timeframe:  {settings.SETUP_TIMEFRAME} / {settings.BIAS_TIMEFRAME}\n\n"
                 f"Entry:      ${result['price']:.2f}\n"
-                f"Stop Loss:  ${setup.sl_price:.2f}  (-{settings.SL_PIPS} pips)\n"
-                f"Take Profit: ${setup.tp_price:.2f}  (+{settings.TP_PIPS} pips)\n"
-                f"R:R Ratio:  1:4\n\n"
+                f"Stop Loss:  ${setup.sl_price:.2f}  (-{sl_pips:.1f} pips)\n"
+                f"Take Profit: ${setup.tp_price:.2f}  (+{tp_pips:.1f} pips)\n"
+                f"R:R Ratio:  1:{(tp_pips/sl_pips):.1f}\n\n"
                 f"Confluences (Score: {setup.confluence_score}):\n"
                 + "\n".join([f"  ✅ {c}" for c in setup.confluences]) + "\n\n"
                 f"Primary Zone: {setup.primary_zone}"
@@ -144,21 +154,27 @@ class ICTTradingBot:
         symbols_to_remove = []
         
         for symbol, pos in self.state["current_positions"].items():
-            # Get latest price
-            ticker = self.engine.fetch_ticker(symbol)
-            current_price = ticker['last'] or ticker['close']
-            
-            exit_reason = check_sl_tp(pos, current_price)
-            
-            # Also check time stop
-            opened_at = datetime.fromisoformat(pos["opened_at"])
-            hours_open = (datetime.now() - opened_at).total_seconds() / 3600
-            if not exit_reason and hours_open >= settings.MAX_TRADE_HOURS:
-                exit_reason = "TIME_STOP"
+            try:
+                # Get latest price
+                ticker = self.engine.fetch_ticker(symbol)
+                self.killswitch.record_success()
+                current_price = ticker['last'] or ticker['close']
                 
-            if exit_reason:
-                await self.execute_exit(symbol, pos, current_price, exit_reason)
-                symbols_to_remove.append(symbol)
+                exit_reason = check_sl_tp(pos, current_price)
+                
+                # Also check time stop
+                opened_at = datetime.fromisoformat(pos["opened_at"])
+                hours_open = (datetime.now() - opened_at).total_seconds() / 3600
+                if not exit_reason and hours_open >= settings.MAX_TRADE_HOURS:
+                    exit_reason = "TIME_STOP"
+                    
+                if exit_reason:
+                    await self.execute_exit(symbol, pos, current_price, exit_reason)
+                    symbols_to_remove.append(symbol)
+            except Exception as e:
+                logger.error(f"Error monitoring {symbol}: {e}")
+                self.killswitch.record_failure()
+                if self.killswitch.is_triggered: break
                 
         for symbol in symbols_to_remove:
             del self.state["current_positions"][symbol]
@@ -178,7 +194,8 @@ class ICTTradingBot:
         net_pnl = self.engine.log_closed_trade(symbol, is_long, pos["amount_base"], pos["entry_price"], final_exit_price)
         
         # Pips
-        pips = (final_exit_price - pos["entry_price"]) / settings.PIP_VALUE_USDT
+        pip_value = get_pip_value(symbol)
+        pips = (final_exit_price - pos["entry_price"]) / pip_value
         if not is_long:
             pips = -pips
             

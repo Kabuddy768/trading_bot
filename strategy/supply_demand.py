@@ -2,6 +2,7 @@ import pandas as pd
 from dataclasses import dataclass
 from datetime import datetime
 from utils.config import settings
+from risk.manager import get_pip_value
 
 @dataclass
 class Zone:
@@ -14,7 +15,7 @@ class Zone:
     proximal_line: float  # The edge closest to current price (entry edge)
     distal_line: float    # The edge furthest from current price (SL reference)
 
-def detect_zones(df: pd.DataFrame, min_impulse_pips: float = 10.0) -> list[Zone]:
+def detect_zones(df: pd.DataFrame, symbol: str, min_impulse_pips: float = 10.0) -> list[Zone]:
     """
     Identifies Supply and Demand zones by:
     1. Finding candles/areas with strong departure moves (big impulse away)
@@ -24,12 +25,13 @@ def detect_zones(df: pd.DataFrame, min_impulse_pips: float = 10.0) -> list[Zone]
     Returns all active (unbroken) zones.
     """
     zones = []
+    pip_value = get_pip_value(symbol)
     
     # Simple logic: A zone is a base (consolidation) followed by an impulse
     # We'll look for impulse candles first
     for i in range(5, len(df) - 1):
         candle = df.iloc[i]
-        body_size_pips = abs(candle['close'] - candle['open']) / settings.PIP_VALUE_USDT
+        body_size_pips = abs(candle['close'] - candle['open']) / pip_value
         
         if body_size_pips >= min_impulse_pips:
             # Found a potential impulse move
@@ -85,6 +87,7 @@ def detect_zones(df: pd.DataFrame, min_impulse_pips: float = 10.0) -> list[Zone]
 
 def get_zones_near_price(
     zones: list[Zone],
+    symbol: str,
     current_price: float,
     direction: str,
     proximity_pips: float = 15.0
@@ -96,16 +99,17 @@ def get_zones_near_price(
     Prioritizes fresh zones over tested ones.
     """
     candidates = []
+    pip_value = get_pip_value(symbol)
     
     for zone in zones:
         if direction == "LONG" and zone.type == "DEMAND":
             if current_price > zone.proximal_line:
-                dist = (current_price - zone.proximal_line) / settings.PIP_VALUE_USDT
+                dist = (current_price - zone.proximal_line) / pip_value
                 if dist <= proximity_pips:
                     candidates.append(zone)
         elif direction == "SHORT" and zone.type == "SUPPLY":
             if current_price < zone.proximal_line:
-                dist = (zone.proximal_line - current_price) / settings.PIP_VALUE_USDT
+                dist = (zone.proximal_line - current_price) / pip_value
                 if dist <= proximity_pips:
                     candidates.append(zone)
                     

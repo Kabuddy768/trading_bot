@@ -20,16 +20,9 @@ class TradeSetup:
 def calculate_pip_levels(entry: float, direction: str, symbol: str) -> tuple[float, float]:
     """
     Calculates SL and TP prices from entry based on pip settings.
-    sl = entry - (SL_PIPS * PIP_VALUE_USDT) for LONG
-    tp = entry + (TP_PIPS * PIP_VALUE_USDT) for LONG
-    (Reversed for SHORT)
-    Returns: (sl_price, tp_price)
     """
-    # Note: PIP_VALUE_USDT is a base setting, might need adjustment per symbol
-    # For BTC, 1 pip = 1 USDT is common. For ETH, maybe 1 pip = 0.1 USDT.
-    # For now, we use the global setting.
-    
-    multiplier = settings.PIP_VALUE_USDT
+    from risk.manager import get_pip_value
+    multiplier = get_pip_value(symbol)
     sl_dist = settings.SL_PIPS * multiplier
     tp_dist = settings.TP_PIPS * multiplier
     

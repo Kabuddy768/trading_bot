@@ -2,6 +2,7 @@ import pandas as pd
 from dataclasses import dataclass
 from datetime import datetime
 from utils.config import settings
+from risk.manager import get_pip_value
 
 @dataclass
 class OrderBlock:
@@ -20,15 +21,14 @@ class BreakerBlock:
     formed_at: datetime
     original_ob_type: str  # What it was before being broken
 
-def detect_order_blocks(df: pd.DataFrame, lookback: int = settings.OB_LOOKBACK) -> list[OrderBlock]:
+def detect_order_blocks(df: pd.DataFrame, symbol: str, lookback: int = settings.OB_LOOKBACK) -> list[OrderBlock]:
     """
     Scans for valid Order Blocks by:
-    1. Finding strong impulse moves (candles that break the previous swing)
-    2. Looking back for the last opposing candle before the impulse
-    3. Marking OBs as mitigated if price has since traded back into them
+    ...
     Returns only UN-mitigated OBs.
     """
     obs = []
+    pip_value = get_pip_value(symbol)
     
     # We need some history to find impulse moves
     for i in range(lookback, len(df) - 1):
@@ -38,7 +38,7 @@ def detect_order_blocks(df: pd.DataFrame, lookback: int = settings.OB_LOOKBACK) 
         # Bullish OB check: Strong bullish move breaking structure
         # A simple proxy for "breaking structure" is a candle with a large body
         body_size = abs(next_candle['close'] - next_candle['open'])
-        body_size_pips = body_size / settings.PIP_VALUE_USDT
+        body_size_pips = body_size / pip_value
         
         if next_candle['close'] > next_candle['open'] and body_size_pips > 5.0:
             # Look back for the last bearish candle
@@ -54,6 +54,10 @@ def detect_order_blocks(df: pd.DataFrame, lookback: int = settings.OB_LOOKBACK) 
                         strength=body_size_pips
                     )
                     
+                    # Deduplicate: Check if we already have an OB with same top/bottom and formed_at
+                    if any(o.top == ob.top and o.bottom == ob.bottom and o.formed_at == ob.formed_at for o in obs):
+                        break
+
                     # Check if mitigated since formation
                     is_mitigated = False
                     for k in range(j+1, len(df)):
@@ -80,6 +84,10 @@ def detect_order_blocks(df: pd.DataFrame, lookback: int = settings.OB_LOOKBACK) 
                         strength=body_size_pips
                     )
                     
+                    # Deduplicate
+                    if any(o.top == ob.top and o.bottom == ob.bottom and o.formed_at == ob.formed_at for o in obs):
+                        break
+
                     # Check if mitigated since formation
                     is_mitigated = False
                     for k in range(j+1, len(df)):
@@ -93,23 +101,24 @@ def detect_order_blocks(df: pd.DataFrame, lookback: int = settings.OB_LOOKBACK) 
                     
     return obs
 
-def detect_breaker_blocks(df: pd.DataFrame) -> list[BreakerBlock]:
+def detect_breaker_blocks(df: pd.DataFrame, symbol: str) -> list[BreakerBlock]:
     """
     Finds Order Blocks that have been mitigated (price traded through them).
-    These flip polarity and become Breaker Blocks.
+    ...
     Returns list of active Breaker Blocks.
     """
     # For breakers, we look for OBs that WERE mitigated by a strong move
     # This is a bit complex, let's simplify: 
     # A breaker is an OB that price closed BEYOND.
     breakers = []
+    pip_value = get_pip_value(symbol)
     
     # We'll re-scan for all OBs and see which ones were "broken"
     all_potential_obs = []
     # (Essentially repeating detect_order_blocks but keeping mitigated ones)
     for i in range(10, len(df) - 1):
         next_candle = df.iloc[i+1]
-        body_size_pips = abs(next_candle['close'] - next_candle['open']) / settings.PIP_VALUE_USDT
+        body_size_pips = abs(next_candle['close'] - next_candle['open']) / pip_value
         if body_size_pips > 5.0:
             for j in range(i, i - 10, -1):
                 prev_candle = df.iloc[j]
@@ -168,6 +177,7 @@ def detect_breaker_blocks(df: pd.DataFrame) -> list[BreakerBlock]:
 def get_active_ob_near_price(
     obs: list[OrderBlock],
     breakers: list[BreakerBlock],
+    symbol: str,
     current_price: float,
     direction: str,
     proximity_pips: float = 10.0
@@ -177,28 +187,29 @@ def get_active_ob_near_price(
     that are aligned with the trade direction.
     """
     candidates = []
+    pip_value = get_pip_value(symbol)
     
     for ob in obs:
         if direction == "LONG" and ob.type == "BULLISH":
             if current_price > ob.top:
-                dist = (current_price - ob.top) / settings.PIP_VALUE_USDT
+                dist = (current_price - ob.top) / pip_value
                 if dist <= proximity_pips:
                     candidates.append(ob)
         elif direction == "SHORT" and ob.type == "BEARISH":
             if current_price < ob.bottom:
-                dist = (ob.bottom - current_price) / settings.PIP_VALUE_USDT
+                dist = (ob.bottom - current_price) / pip_value
                 if dist <= proximity_pips:
                     candidates.append(ob)
                     
     for bb in breakers:
         if direction == "LONG" and bb.type == "BULLISH":
             if current_price > bb.top:
-                dist = (current_price - bb.top) / settings.PIP_VALUE_USDT
+                dist = (current_price - bb.top) / pip_value
                 if dist <= proximity_pips:
                     candidates.append(bb)
         elif direction == "SHORT" and bb.type == "BEARISH":
             if current_price < bb.bottom:
-                dist = (bb.bottom - current_price) / settings.PIP_VALUE_USDT
+                dist = (bb.bottom - current_price) / pip_value
                 if dist <= proximity_pips:
                     candidates.append(bb)
                     

@@ -12,7 +12,7 @@ def create_mock_data():
     dates = [datetime.now() - timedelta(hours=i) for i in range(100, 0, -1)]
     
     # Simple bullish trend
-    close = [100 + i + np.random.normal(0, 0.5) for i in range(100)]
+    close = [40000 + i + np.random.normal(0, 0.5) for i in range(100)]
     open_price = [c - 0.5 for c in close]
     high = [max(o, c) + 0.5 for o, c in zip(open_price, close)]
     low = [min(o, c) - 0.5 for o, c in zip(open_price, close)]
@@ -20,10 +20,10 @@ def create_mock_data():
     # Inject an FVG
     # candle i-2 high < candle i low
     # i = 80
-    high[78] = 175.0
-    open_price[79] = 176.0
-    close[79] = 180.0
-    low[80] = 182.0
+    high[78] = 40075.0
+    open_price[79] = 40076.0
+    close[79] = 40085.0
+    low[80] = 40090.0
     
     df = pd.DataFrame({
         'open': open_price,
@@ -46,21 +46,21 @@ def test_strategy():
     print(f"Bias: {bias['structure']} in {bias['zone']} zone. Tradeable: {bias['tradeable']}")
     
     # FVG
-    fvgs = detect_fvgs(df)
+    fvgs = detect_fvgs(df, symbol)
     print(f"Detected {len(fvgs)} FVGs.")
     for f in fvgs:
         print(f"  - {f.type} FVG at {f.midpoint:.2f}")
         
     # OB
-    obs = detect_order_blocks(df)
+    obs = detect_order_blocks(df, symbol)
     print(f"Detected {len(obs)} Order Blocks.")
     
     # Breakers
-    breakers = detect_breaker_blocks(df)
+    breakers = detect_breaker_blocks(df, symbol)
     print(f"Detected {len(breakers)} Breaker Blocks.")
     
     # Zones
-    zones = detect_zones(df)
+    zones = detect_zones(df, symbol)
     print(f"Detected {len(zones)} S/D Zones.")
     
     # Confluence

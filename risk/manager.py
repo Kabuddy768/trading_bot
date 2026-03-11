@@ -98,23 +98,28 @@ def check_sl_tp(position: dict, current_price: float) -> str | None:
     return None
 
 
+def get_pip_value(symbol: str) -> float:
+    """Returns the USDT value of 1 pip for a given symbol."""
+    return settings.PIP_VALUES.get(symbol, settings.PIP_VALUE_BASE)
+
 def load_state() -> Dict[str, Any]:
     """Loads bot state from database so positions survive restarts."""
-    current_position = db.load_state_val("current_position")
+    ict_positions = db.load_state_val("ict_positions")
     paper_equity = db.load_state_val("paper_equity")
     
     state = {}
-    if current_position is not None:
-        state["current_position"] = current_position
+    state["current_positions"] = ict_positions if ict_positions is not None else {}
     if paper_equity is not None:
         state["paper_equity"] = paper_equity
+    else:
+        state["paper_equity"] = settings.PAPER_EQUITY
         
     return state
 
-def save_state(current_position: Dict[str, Any] | None, paper_equity: float):
-    """Saves bot position and equity state to database."""
+def save_state(current_positions: Dict[str, Any] | None, paper_equity: float):
+    """Saves bot positions and equity state to database."""
     try:
-        db.save_state_val("current_position", current_position)
+        db.save_state_val("ict_positions", current_positions)
         db.save_state_val("paper_equity", paper_equity)
         logger.debug("State saved to database successfully.")
     except Exception as e:
