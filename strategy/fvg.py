@@ -103,13 +103,13 @@ def get_active_fvgs(df: pd.DataFrame, symbol: str, current_price: float, directi
             # For long, we want to buy when price approaches the FVG from above
             if current_price > fvg.midpoint:
                 dist_pips = (current_price - fvg.midpoint) / pip_value
-                if dist_pips <= 2.0:
+                if dist_pips <= 10.0:
                     active_fvgs.append(fvg)
         elif direction == "SHORT" and fvg.type == "BEARISH":
             # For short, we want to sell when price approaches the FVG from below
             if current_price < fvg.midpoint:
                 dist_pips = (fvg.midpoint - current_price) / pip_value
-                if dist_pips <= 2.0:
+                if dist_pips <= 10.0:
                     active_fvgs.append(fvg)
                     
     return active_fvgs

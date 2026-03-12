@@ -9,9 +9,9 @@ from data.fetcher import fetch_historical_data
 from execution.engine import ExecutionEngine
 from risk.manager import calculate_position_size, check_sl_tp, load_state, save_state, KillSwitch, get_pip_value
 from strategy.bias import get_bias
-from strategy.fvg import detect_fvgs, get_active_fvgs
-from strategy.orderblock import detect_order_blocks, detect_breaker_blocks, get_active_ob_near_price
-from strategy.supply_demand import detect_zones, get_zones_near_price
+from strategy.fvg import detect_fvgs
+from strategy.orderblock import detect_order_blocks, detect_breaker_blocks
+from strategy.supply_demand import detect_zones
 from strategy.confluence import score_setup
 
 class ICTTradingBot:
@@ -83,15 +83,13 @@ class ICTTradingBot:
         current_price = df_mtf['close'].iloc[-1]
         direction = bias["direction"]
         
-        fvgs = get_active_fvgs(df_mtf, symbol, current_price, direction)
+        fvgs = detect_fvgs(df_mtf, symbol)
         obs = detect_order_blocks(df_mtf, symbol)
         breakers = detect_breaker_blocks(df_mtf, symbol)
-        active_obs = get_active_ob_near_price(obs, breakers, symbol, current_price, direction)
         zones = detect_zones(df_mtf, symbol)
-        active_zones = get_zones_near_price(zones, symbol, current_price, direction)
 
         # Step 4: Confluence Scoring
-        setup = score_setup(symbol, current_price, bias, fvgs, active_obs, breakers, active_zones)
+        setup = score_setup(symbol, df_mtf, bias, fvgs, obs, breakers, zones)
         
         if setup:
             logger.success(f"🚀 ICT Setup Detected for {symbol}: Score {setup.confluence_score}")

@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 from data.fetcher import fetch_historical_data
 from strategy.bias import get_bias
-from strategy.fvg import detect_fvgs, get_active_fvgs
-from strategy.orderblock import detect_order_blocks, detect_breaker_blocks, get_active_ob_near_price
-from strategy.supply_demand import detect_zones, get_zones_near_price
+from strategy.fvg import detect_fvgs
+from strategy.orderblock import detect_order_blocks, detect_breaker_blocks
+from strategy.supply_demand import detect_zones
 from strategy.confluence import score_setup
 from utils.config import settings
 
@@ -21,6 +21,18 @@ except ImportError:
 
 PAPER_FEE_RATE = getattr(settings, 'PAPER_FEE_RATE', 0.001)
 MAX_RISK_PER_TRADE = getattr(settings, 'MAX_RISK_PER_TRADE', 0.02)
+
+@dataclass
+class PendingOrder:
+    symbol: str
+    direction: str
+    entry_price: float
+    sl_price: float
+    tp_price: float
+    setup_idx: int
+    confluence_score: int
+    equity_at_setup: float
+    expires_at_idx: int
 
 @dataclass
 class BacktestTrade:
@@ -154,8 +166,31 @@ class ICTBacktester:
         # Start at candle 50 so bias/structure detectors have enough context
         WARMUP = 50
         active_trade: Optional[BacktestTrade] = None
+        pending_order: Optional[PendingOrder] = None
+        
+        # --- PERFORMANCE OPTIMIZATION ---
+        # Pre-compute HTF end positions for each MTF candle (prevents O(N^2) boolean indexing)
+        htf_times = df_htf.index
+        mtf_times = df_mtf.index
+        htf_end_positions = htf_times.searchsorted(mtf_times, side='right')
+        
+        last_htf_candle = None
+        cached_bias = None
+        
+        last_structure_candle = None
+        cached_fvgs = []
+        cached_obs = []
+        cached_breakers = []
+        cached_zones = []
+        # --------------------------------
         
         print(f"Running backtest on {len(df_mtf)} MTF candles...")
+        
+        skip_bias = 0
+        skip_confluence = 0
+        trades_entered = 0
+        limit_orders_created = 0
+        limit_orders_canceled = 0
         
         iterator = range(WARMUP, len(df_mtf))
         if HAS_TQDM:
@@ -163,10 +198,47 @@ class ICTBacktester:
 
         for i in iterator:
             current_price = df_mtf['close'].iloc[i]
+            candle = df_mtf.iloc[i]
+
+            # --- Monitor pending order ---
+            if pending_order:
+                direction = pending_order.direction
+                entry_px = pending_order.entry_price
+                
+                hit_entry = False
+                if direction == "LONG" and candle['low'] <= entry_px:
+                    hit_entry = True
+                elif direction == "SHORT" and candle['high'] >= entry_px:
+                    hit_entry = True
+                    
+                if hit_entry:
+                    trades_entered += 1
+                    sl_dist = abs(entry_px - pending_order.sl_price)
+                    if sl_dist == 0:
+                        sl_dist = 1.0 # Prevent Division by Zero
+                        
+                    risk_usd = equity * self.risk_per_trade
+                    trade_size = risk_usd / sl_dist
+                    
+                    active_trade = BacktestTrade(
+                        symbol=pending_order.symbol,
+                        direction=pending_order.direction,
+                        entry_price=entry_px,
+                        sl_price=pending_order.sl_price,
+                        tp_price=pending_order.tp_price,
+                        entry_idx=i,
+                        confluence_score=pending_order.confluence_score,
+                        equity_at_entry=equity,
+                        position_size=trade_size
+                    )
+                    result.trades.append(active_trade)
+                    pending_order = None
+                elif i >= pending_order.expires_at_idx:
+                    limit_orders_canceled += 1
+                    pending_order = None
 
             # --- Monitor open position ---
             if active_trade and active_trade.exit_reason == "OPEN":
-                candle = df_mtf.iloc[i]
                 direction = active_trade.direction
                 
                 hit_sl = (direction == "LONG" and candle['low'] <= active_trade.sl_price) or \
@@ -222,51 +294,67 @@ class ICTBacktester:
                     active_trade = None
                     
                 continue  # Don't look for new entries while in a trade
+                
+            # If we have a pending order but no fill yet, we do not look for new setups
+            # Because an active structure is currently in play
+            if pending_order:
+                continue
 
             # --- Look for new entry ---
-            # Use a slice of data up to current candle (prevent lookahead bias)
-            df_htf_slice = df_htf[df_htf.index <= df_mtf.index[i]].tail(200)
+            # PERFORMANCE: Use pre-computed integer indices for slicing
+            htf_end = htf_end_positions[i]
+            df_htf_slice = df_htf.iloc[max(0, htf_end-200):htf_end]
             df_mtf_slice = df_mtf.iloc[max(0, i-99):i+1]
 
             if len(df_htf_slice) < 20 or len(df_mtf_slice) < 20:
                 continue
 
             try:
-                bias = get_bias(self.symbol, df_htf_slice)
-                if not bias["tradeable"]:
+                # PERFORMANCE: Only rerun High-Timeframe bias if the HTF candle has closed
+                current_htf_candle = df_htf_slice.index[-1]
+                if current_htf_candle != last_htf_candle:
+                    cached_bias = get_bias(self.symbol, df_htf_slice)
+                    last_htf_candle = current_htf_candle
+                
+                bias = cached_bias
+                if not bias or not bias["tradeable"]:
+                    skip_bias += 1
                     continue
 
-                direction = bias["direction"]
-                fvgs = get_active_fvgs(df_mtf_slice, self.symbol, current_price, direction)
-                obs = detect_order_blocks(df_mtf_slice, self.symbol)
-                breakers = detect_breaker_blocks(df_mtf_slice, self.symbol)
-                active_obs = get_active_ob_near_price(obs, breakers, self.symbol, current_price, direction)
-                zones = detect_zones(df_mtf_slice, self.symbol)
-                active_zones = get_zones_near_price(zones, self.symbol, current_price, direction)
-
-                setup = score_setup(self.symbol, current_price, bias, fvgs, active_obs, breakers, active_zones)
-
-                # CRITICAL SIZING FIX: Size is determined now at Entry using live equity
-                sl_dist = abs(setup.entry_price - setup.sl_price)
-                if sl_dist == 0:
-                    sl_dist = 1.0 # Prevent Division by Zero
-                    
-                risk_usd = self.current_equity * self.risk_per_trade if hasattr(self, 'current_equity') else equity * self.risk_per_trade
-                trade_size = risk_usd / sl_dist
+                # PERFORMANCE: Structure detection is expensive. Only rerun every 5 MTF candles.
+                if last_structure_candle is None or (i - last_structure_candle) >= 5:
+                    cached_fvgs = detect_fvgs(df_mtf_slice, self.symbol)
+                    cached_obs = detect_order_blocks(df_mtf_slice, self.symbol)
+                    cached_breakers = detect_breaker_blocks(df_mtf_slice, self.symbol)
+                    cached_zones = detect_zones(df_mtf_slice, self.symbol)
+                    last_structure_candle = i
                 
-                if setup:
-                    active_trade = BacktestTrade(
-                        symbol=self.symbol,
-                        direction=setup.direction,
-                        entry_price=setup.entry_price,
-                        sl_price=setup.sl_price,
-                        tp_price=setup.tp_price,
-                        entry_idx=i,
-                        confluence_score=setup.confluence_score,
-                        equity_at_entry=equity,
-                        position_size=trade_size
-                    )
-                    result.trades.append(active_trade)
+                fvgs = cached_fvgs
+                obs = cached_obs
+                breakers = cached_breakers
+                zones = cached_zones
+
+                setup = score_setup(self.symbol, df_mtf_slice, bias, fvgs, obs, breakers, zones)
+
+                if not setup:
+                    skip_confluence += 1
+                    continue
+                    
+                limit_orders_created += 1
+                
+                # Create limit order instead of executing at market close
+                expiry_candles = getattr(settings, 'ORDER_EXPIRY_CANDLES', 8)
+                pending_order = PendingOrder(
+                    symbol=self.symbol,
+                    direction=setup.direction,
+                    entry_price=setup.entry_price,
+                    sl_price=setup.sl_price,
+                    tp_price=setup.tp_price,
+                    setup_idx=i,
+                    confluence_score=setup.confluence_score,
+                    equity_at_setup=equity,
+                    expires_at_idx=i + expiry_candles
+                )
 
             except Exception:
                 continue
@@ -278,6 +366,12 @@ class ICTBacktester:
             active_trade.exit_idx = len(df_mtf) - 1
 
         result.final_equity = equity
+        
+        print(f"  Skipped by bias: {skip_bias}")
+        print(f"  Skipped by confluence: {skip_confluence}")
+        print(f"  Limit orders created: {limit_orders_created}")
+        print(f"  Limit orders canceled: {limit_orders_canceled}")
+        print(f"  Trades entered: {trades_entered}")
         
         # Capture the time bounds of this simulation
         if len(df_mtf) > WARMUP:
@@ -296,8 +390,8 @@ def run_multi_symbol_backtest():
     print("\n🔍 Running ICT Strategy Backtest")
     print("="*50)
     
-    # We fetch data based on the explicit date bounds to cover Q1 2026
-    SINCE = "2026-01-01"
+    # We fetch data based on the explicit date bounds to cover 2024 to present
+    SINCE = "2024-01-01"
     UNTIL = "2026-03-10"
 
     for symbol in symbols:

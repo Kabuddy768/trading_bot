@@ -34,15 +34,23 @@ def detect_market_structure(df: pd.DataFrame) -> str:
            lows[i] < lows[i+1] and lows[i] < lows[i+2]:
             swing_lows.append(lows[i])
 
-    if len(swing_highs) < 2 or len(swing_lows) < 2:
+    if len(swing_highs) < 1 or len(swing_lows) < 1:
         return "RANGING"
         
-    # Check Market Structure via latest 2 confirmed swings
-    last_hh = swing_highs[-1] > swing_highs[-2]
-    last_hl = swing_lows[-1] > swing_lows[-2]
-    
-    last_lh = swing_highs[-1] < swing_highs[-2]
-    last_ll = swing_lows[-1] < swing_lows[-2]
+    # Check Market Structure via latest 2 confirmed swings if available, otherwise 1
+    if len(swing_highs) >= 2 and len(swing_lows) >= 2:
+        last_hh = swing_highs[-1] > swing_highs[-2]
+        last_hl = swing_lows[-1] > swing_lows[-2]
+        
+        last_lh = swing_highs[-1] < swing_highs[-2]
+        last_ll = swing_lows[-1] < swing_lows[-2]
+    else:
+        # Strong trend, just use the slope of the extreme
+        last_hh = swing_highs[-1] > df['high'].values[0]
+        last_hl = swing_lows[-1] > df['low'].values[0]
+        
+        last_lh = swing_highs[-1] < df['high'].values[0]
+        last_ll = swing_lows[-1] < df['low'].values[0]
     
     if last_hh and last_hl:
         return "BULLISH"
@@ -59,19 +67,46 @@ def identify_premium_discount(df: pd.DataFrame) -> str:
     Returns:
         "PREMIUM" | "DISCOUNT" | "EQUILIBRIUM"
     """
-    if len(df) < 20:
+    if len(df) < 10:
         return "EQUILIBRIUM"
-        
-    # Use the full provided HTF frame context to compute the range
-    highest_high = df['high'].max()
-    lowest_low = df['low'].min()
+    
+    highs = df['high'].values
+    lows = df['low'].values
+    
+    recent_swing_high = None
+    recent_swing_low = None
+    
+    for i in range(len(df) - 3, 2, -1):
+        if highs[i] > highs[i-1] and highs[i] > highs[i-2] and \
+           highs[i] > highs[i+1] and highs[i] > highs[i+2]:
+            if recent_swing_high is None:
+                recent_swing_high = highs[i]
+                
+        if lows[i] < lows[i-1] and lows[i] < lows[i-2] and \
+           lows[i] < lows[i+1] and lows[i] < lows[i+2]:
+            if recent_swing_low is None:
+                recent_swing_low = lows[i]
+                
+        if recent_swing_high and recent_swing_low:
+            break
+    
+    # FALLBACK: if no pivots found (strong trend), use recent 20-candle range
+    if not recent_swing_high:
+        recent_swing_high = df['high'].iloc[-20:].max()
+    if not recent_swing_low:
+        recent_swing_low = df['low'].iloc[-20:].min()
+    
     current_price = df['close'].iloc[-1]
     
-    midpoint = (highest_high + lowest_low) / 2
+    if recent_swing_high == recent_swing_low:
+        return "EQUILIBRIUM"
+        
+    midpoint = (recent_swing_high + recent_swing_low) / 2
+    equilibrium_buffer = (recent_swing_high - recent_swing_low) * 0.05
     
-    if current_price > midpoint:
+    if current_price > midpoint + equilibrium_buffer:
         return "PREMIUM"
-    elif current_price < midpoint:
+    elif current_price < midpoint - equilibrium_buffer:
         return "DISCOUNT"
     else:
         return "EQUILIBRIUM"

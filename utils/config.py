@@ -35,22 +35,25 @@ class Settings(BaseSettings):
     # ICT Signal Thresholds
     MIN_CONFLUENCES: int = 2         # Minimum confluences required to enter
     MIN_CONFLUENCES_BY_SYMBOL: dict = {
-        "BTC/USDT": 4,   # BTC needs much stronger confirmation
-        "ETH/USDT": 3,
-        "BNB/USDT": 3,
-        "SOL/USDT": 3,
+        "BTC/USDT": 3,
+        "ETH/USDT": 2,
+        "BNB/USDT": 2,
+        "SOL/USDT": 2,
     }
     FVG_MIN_SIZE_PIPS: float = 2.0   # Minimum FVG size to be valid
     OB_LOOKBACK: int = 10            # Candles to look back for Order Blocks
     ZONE_STRENGTH_THRESHOLD: int = 2 # Minimum touches to validate S/D zone
+    ORDER_EXPIRY_CANDLES: int = 8    # How many candles a limit order stays valid
+    RR_RATIO: float = 2.0            # Risk:Reward Ratio based on structural SL
+    ATR_EXHAUSTION_MULTIPLIER: float = 2.0 # Cancel setup if candle > X * ATR(20)
 
     # Pip-based Risk
     PIP_VALUE_BASE: float = 1.0      # Default 1 pip = $1 USDT
     PIP_VALUES: dict = {
         "BTC/USDT": 50.0,   # SL=$250, TP=$1000 — real room to breathe
-        "ETH/USDT": 5.0,    # SL=$25,  TP=$100
-        "BNB/USDT": 1.0,    # SL=$5,   TP=$20
-        "SOL/USDT": 0.5     # SL=$2.5, TP=$10
+        "ETH/USDT": 5.0,    # SL=$50,  TP=$200
+        "BNB/USDT": 2.0,    # SL=$30,  TP=$120
+        "SOL/USDT": 1.0     # SL=$20,  TP=$80
     }
     SL_PIPS_BY_SYMBOL: dict = {
         "BTC/USDT": 5,
