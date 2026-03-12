@@ -120,9 +120,8 @@ def score_setup(
     if near_obs:
         score += 1
         confluences.append(f"Order Block present ({len(near_obs)})")
-        ob_entry = near_obs[0].top if direction == "LONG" else near_obs[0].bottom
         if primary_zone == "NONE":
-            entry_price = ob_entry
+            entry_price = near_obs[0].top if direction == "LONG" else near_obs[0].bottom
             primary_zone = "OB"
 
     # Score Breakers — 15 pip window

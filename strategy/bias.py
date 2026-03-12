@@ -90,11 +90,10 @@ def identify_premium_discount(df: pd.DataFrame) -> str:
         if recent_swing_high and recent_swing_low:
             break
     
-    # FALLBACK: if no pivots found (strong trend), use recent 20-candle range
-    if not recent_swing_high:
-        recent_swing_high = df['high'].iloc[-20:].max()
-    if not recent_swing_low:
-        recent_swing_low = df['low'].iloc[-20:].min()
+    # If no pivots found (strong trend), returning EQUILIBRIUM is safer than guessing a range
+    # because guessing with min/max usually places price at the extreme end of the trend
+    if not recent_swing_high or not recent_swing_low:
+        return "EQUILIBRIUM"
     
     current_price = df['close'].iloc[-1]
     
@@ -114,16 +113,20 @@ def identify_premium_discount(df: pd.DataFrame) -> str:
 def get_bias(symbol: str, df_htf: pd.DataFrame) -> dict:
     """
     Master bias function. Combines market structure + premium/discount.
-
-    Returns dict:
-    {
-        "symbol": str,
-        "structure": "BULLISH" | "BEARISH" | "RANGING",
-        "zone": "PREMIUM" | "DISCOUNT" | "EQUILIBRIUM",
-        "tradeable": bool,       # True only if structure + zone align
-        "direction": "LONG" | "SHORT" | None
-    }
     """
+    # 1. Structure Check
+    # We'll use a larger context for structure pivots
+    highs = df_htf['high'].values
+    lows = df_htf['low'].values
+    
+    swing_highs = []
+    swing_lows = []
+    for i in range(2, len(df_htf) - 2):
+        if highs[i] > highs[i-1] and highs[i] > highs[i-2] and highs[i] > highs[i+1] and highs[i] > highs[i+2]:
+            swing_highs.append(highs[i])
+        if lows[i] < lows[i-1] and lows[i] < lows[i-2] and lows[i] < lows[i+1] and lows[i] < lows[i+2]:
+            swing_lows.append(lows[i])
+
     structure = detect_market_structure(df_htf)
     zone = identify_premium_discount(df_htf)
     
@@ -136,6 +139,17 @@ def get_bias(symbol: str, df_htf: pd.DataFrame) -> dict:
     elif structure == "BEARISH" and zone == "PREMIUM":
         tradeable = True
         direction = "SHORT"
+
+    # --- Trend Exhaustion Filter ---
+    # If structure is BULLISH but we see 3 consecutive lower highs, the trend is likely exhausting
+    if tradeable and structure == "BULLISH" and len(swing_highs) >= 3:
+        if swing_highs[-1] < swing_highs[-2] < swing_highs[-3]:
+            tradeable = False
+            
+    # If structure is BEARISH but we see 3 consecutive higher lows
+    if tradeable and structure == "BEARISH" and len(swing_lows) >= 3:
+        if swing_lows[-1] > swing_lows[-2] > swing_lows[-3]:
+            tradeable = False
         
     return {
         "symbol": symbol,

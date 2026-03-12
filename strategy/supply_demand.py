@@ -19,74 +19,100 @@ def detect_zones(df: pd.DataFrame, symbol: str, min_impulse_pips: float = 10.0) 
     """
     Identifies Supply and Demand zones by:
     1. Finding candles/areas with strong departure moves (big impulse away)
-    2. Measuring the consolidation base before the move
-    3. Tracking how many times price has returned to test the zone
-    4. Marking zones as fresh (untested) or tested
+    2. Measuring the consolidation base before the move (1-3 small candles)
     Returns all active (unbroken) zones.
     """
     zones = []
     pip_value = get_pip_value(symbol)
     
-    # Simple logic: A zone is a base (consolidation) followed by an impulse
+    if len(df) < 5:
+        return []
+
+    highs = df['high'].values
+    lows = df['low'].values
+    opens = df['open'].values
+    closes = df['close'].values
+    times = df.index.values
+    
     # We'll look for impulse candles first
     for i in range(5, len(df) - 1):
-        candle = df.iloc[i]
-        body_size_pips = abs(candle['close'] - candle['open']) / pip_value
+        # Body size of the departure candle
+        body_size_pips = abs(closes[i] - opens[i]) / pip_value
         
         if body_size_pips >= min_impulse_pips:
-            # Found a potential impulse move
-            # Look back for "base" (1-3 candles with small bodies)
-            base_idx = i - 1
-            base_candle = df.iloc[base_idx]
+            # departure candle i
+            is_bullish = closes[i] > opens[i]
             
-            # CRITICAL FIX: Ensure the base is actually a consolidation (small body), not just another huge candle
-            base_body_pips = abs(base_candle['close'] - base_candle['open']) / pip_value
-            if base_body_pips > (min_impulse_pips * 0.4):
-                continue # The base is too volatile, this isn't a clean S/D zone
+            # --- Base Identification ---
+            # Scan back for 1–3 small "base" candles
+            # A base is valid if it forms a consolidation (range doesn't exceed 40% of impulse)
+            base_candles = []
+            base_idx_start = -1
             
-            zone_type = "DEMAND" if candle['close'] > candle['open'] else "SUPPLY"
+            for b in range(i-1, i-4, -1):
+                b_body_pips = abs(closes[b] - opens[b]) / pip_value
+                # If we encounter another high-volatility candle, base ends here
+                if b_body_pips > (min_impulse_pips * 0.4):
+                    break
+                base_candles.append(b)
+                base_idx_start = b
             
-            # Define zone boundaries based on the base candle
-            top = max(base_candle['high'], df.iloc[base_idx-1]['high'] if base_idx > 0 else base_candle['high'])
-            bottom = min(base_candle['low'], df.iloc[base_idx-1]['low'] if base_idx > 0 else base_candle['low'])
+            if not base_candles:
+                continue
+                
+            # Define zone boundaries based on the entire base range
+            base_highs = highs[base_idx_start:i]
+            base_lows = lows[base_idx_start:i]
             
-            zone = Zone(
-                type=zone_type,
-                top=top,
-                bottom=bottom,
-                strength=0,
-                is_fresh=True,
-                formed_at=base_candle.name if hasattr(base_candle, 'name') else None,
-                proximal_line=bottom if zone_type == "DEMAND" else top,
-                distal_line=top if zone_type == "DEMAND" else bottom
-            )
+            top = base_highs.max()
+            bottom = base_lows.min()
+            
+            zone_type = "DEMAND" if is_bullish else "SUPPLY"
             
             # Track tests and validity
             tested_count = 0
             is_broken = False
-            for j in range(i + 1, len(df)):
-                high = df.iloc[j]['high']
-                low = df.iloc[j]['low']
-                close = df.iloc[j]['close']
+            
+            # Sub-view from i+1 to end
+            sub_closes = closes[i+1:]
+            sub_highs = highs[i+1:]
+            sub_lows = lows[i+1:]
+            
+            if zone_type == "DEMAND":
+                # Check for closes BELOW bottom (breaking)
+                mask_break = sub_closes < bottom
+                if mask_break.any():
+                    is_broken = True
+                    # If price closed below, any "test" after that doesn't count
+                    broken_pos = mask_break.argmax()
+                    sub_highs = sub_highs[:broken_pos]
+                    sub_lows = sub_lows[:broken_pos]
                 
-                # Check for test: price enters the zone but doesn't close beyond it
-                if zone.type == "DEMAND":
-                    if low <= zone.top and low > zone.bottom:
-                        tested_count += 1
-                    if close < zone.bottom:
-                        is_broken = True
-                        break
-                else: # SUPPLY
-                    if high >= zone.bottom and high < zone.top:
-                        tested_count += 1
-                    if close > zone.top:
-                        is_broken = True
-                        break
+                # Check for tests (low enters zone top/bottom range)
+                tested_count = ((sub_lows <= top) & (sub_lows > bottom)).sum()
+            else: # SUPPLY
+                # Check for closes ABOVE top (breaking)
+                mask_break = sub_closes > top
+                if mask_break.any():
+                    is_broken = True
+                    broken_pos = mask_break.argmax()
+                    sub_highs = sub_highs[:broken_pos]
+                    sub_lows = sub_lows[:broken_pos]
+                    
+                # Check for tests (high enters zone top/bottom range)
+                tested_count = ((sub_highs >= bottom) & (sub_highs < top)).sum()
                         
             if not is_broken and tested_count <= settings.ZONE_STRENGTH_THRESHOLD:
-                zone.strength = tested_count
-                zone.is_fresh = (tested_count == 0)
-                zones.append(zone)
+                zones.append(Zone(
+                    type=zone_type,
+                    top=top,
+                    bottom=bottom,
+                    strength=tested_count,
+                    is_fresh=(tested_count == 0),
+                    formed_at=times[i-1],
+                    proximal_line=bottom if zone_type == "DEMAND" else top,
+                    distal_line=top if zone_type == "DEMAND" else bottom
+                ))
                 
     return zones
 

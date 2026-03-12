@@ -394,13 +394,20 @@ def run_multi_symbol_backtest():
     SINCE = "2024-01-01"
     UNTIL = "2026-03-10"
 
-    for symbol in symbols:
-        print(f"\n--- {symbol} ---")
-        backtester = ICTBacktester(symbol)
-        result = backtester.run(since_date=SINCE, until_date=UNTIL)
-        result.print_summary()
-        all_results[symbol] = result
-    
+    try:
+        for symbol in symbols:
+            print(f"\n--- {symbol} ---")
+            backtester = ICTBacktester(symbol)
+            result = backtester.run(since_date=SINCE, until_date=UNTIL)
+            result.print_summary()
+            all_results[symbol] = result
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Backtest interrupted by user. Saving progress...")
+
+    if not all_results:
+        print("No results to export.")
+        return
+
     # Comparative summary
     print("\n📊 COMPARATIVE SUMMARY")
     print(f"{'Symbol':<15} {'Trades':>8} {'WinRate':>9} {'PnL':>10} {'PF':>8} {'MaxDD':>8}")
@@ -505,6 +512,6 @@ def walk_forward_test(symbol: str, total_candles: int = 2000):
         print(f"\n  {label}: {len(df_slice)} candles")
 
 if __name__ == "__main__":
-    optimize_confluence_threshold("BTC/USDT")
-    optimize_confluence_threshold("ETH/USDT")
+    # optimize_confluence_threshold("BTC/USDT")
+    # optimize_confluence_threshold("ETH/USDT")
     run_multi_symbol_backtest()

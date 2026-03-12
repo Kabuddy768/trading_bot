@@ -17,74 +17,62 @@ class FVG:
 def detect_fvgs(df: pd.DataFrame, symbol: str, min_size_pips: float = settings.FVG_MIN_SIZE_PIPS) -> list[FVG]:
     """
     Scans all candles in df for bullish and bearish FVGs.
-    ...
     Returns list of UNFILLED FVGs only (filled ones are irrelevant).
     """
     fvgs = []
     pip_value = get_pip_value(symbol)
     
+    if len(df) < 3:
+        return []
+
+    # Vectorized acceleration: use numpy arrays for O(1) access instead of .iloc
+    highs = df['high'].values
+    lows = df['low'].values
+    times = df.index.values
+
     # Needs at least 3 candles to form an FVG
     for i in range(2, len(df)):
-        candle_1 = df.iloc[i-2]
-        candle_2 = df.iloc[i-1]
-        candle_3 = df.iloc[i]
-        
-        # Bullish FVG: candle[i-2].high < candle[i].low
-        if candle_1['high'] < candle_3['low']:
-            top = candle_3['low']
-            bottom = candle_1['high']
-            size = top - bottom
-            
-            size_pips = size / pip_value
+        # Bullish FVG: high[i-2] < low[i]
+        if highs[i-2] < lows[i]:
+            top = lows[i]
+            bottom = highs[i-2]
+            size_pips = (top - bottom) / pip_value
             
             if size_pips >= min_size_pips:
-                fvg = FVG(
-                    type="BULLISH",
-                    top=top,
-                    bottom=bottom,
-                    midpoint=(top + bottom) / 2,
-                    formed_at=candle_2.name if hasattr(candle_2, 'name') else None,
-                    is_filled=False,
-                    size_pips=size_pips
-                )
-                
-                # Check if it was filled in subsequent candles
-                is_filled = False
-                for j in range(i+1, len(df)):
-                    if df.iloc[j]['low'] <= fvg.bottom:
-                        is_filled = True
-                        break
+                # Optimized fill check: check if any subsequent candle's low is <= FVG bottom
+                is_filled = (lows[i+1:] <= bottom).any()
                 
                 if not is_filled:
-                    fvgs.append(fvg)
+                    fvgs.append(FVG(
+                        type="BULLISH",
+                        top=top,
+                        bottom=bottom,
+                        midpoint=(top + bottom) / 2,
+                        formed_at=times[i-1],
+                        is_filled=False,
+                        size_pips=size_pips
+                    ))
                     
-        # Bearish FVG: candle[i-2].low > candle[i].high
-        elif candle_1['low'] > candle_3['high']:
-            top = candle_1['low']
-            bottom = candle_3['high']
-            size = top - bottom
-            size_pips = size / pip_value
+        # Bearish FVG: low[i-2] > high[i]
+        elif lows[i-2] > highs[i]:
+            top = lows[i-2]
+            bottom = highs[i]
+            size_pips = (top - bottom) / pip_value
             
             if size_pips >= min_size_pips:
-                fvg = FVG(
-                    type="BEARISH",
-                    top=top,
-                    bottom=bottom,
-                    midpoint=(top + bottom) / 2,
-                    formed_at=candle_2.name if hasattr(candle_2, 'name') else None,
-                    is_filled=False,
-                    size_pips=size_pips
-                )
-                
-                # Check if it was filled in subsequent candles
-                is_filled = False
-                for j in range(i+1, len(df)):
-                    if df.iloc[j]['high'] >= fvg.top:
-                        is_filled = True
-                        break
+                # Optimized fill check: check if any subsequent candle's high is >= FVG top
+                is_filled = (highs[i+1:] >= top).any()
                 
                 if not is_filled:
-                    fvgs.append(fvg)
+                    fvgs.append(FVG(
+                        type="BEARISH",
+                        top=top,
+                        bottom=bottom,
+                        midpoint=(top + bottom) / 2,
+                        formed_at=times[i-1],
+                        is_filled=False,
+                        size_pips=size_pips
+                    ))
                     
     return fvgs
 

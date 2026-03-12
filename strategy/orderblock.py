@@ -24,157 +24,142 @@ class BreakerBlock:
 def detect_order_blocks(df: pd.DataFrame, symbol: str, lookback: int = settings.OB_LOOKBACK) -> list[OrderBlock]:
     """
     Scans for valid Order Blocks by:
-    ...
+    1. Finding impulse candles (strong body size)
+    2. Looking back for the last opposing candles.
+    3. Checking if subsequent price action has mitigated our block.
     Returns only UN-mitigated OBs.
     """
     obs_dict = {}
     pip_value = get_pip_value(symbol)
     
-    # We need some history to find impulse moves
-    for i in range(lookback, len(df) - 1):
-        current_candle = df.iloc[i]
-        next_candle = df.iloc[i+1]
-        
-        # Bullish OB check: Strong bullish move breaking structure
-        # A simple proxy for "breaking structure" is a candle with a large body
-        body_size = abs(next_candle['close'] - next_candle['open'])
-        body_size_pips = body_size / pip_value
-        
-        if next_candle['close'] > next_candle['open'] and body_size_pips > 5.0:
-            # Look back for the last bearish candle
-            for j in range(i, i - lookback, -1):
-                prev_candle = df.iloc[j]
-                if prev_candle['close'] < prev_candle['open']:
-                    ob_time = prev_candle.name if hasattr(prev_candle, 'name') else None
-                    if ob_time in obs_dict:
-                        break # Already tracked this OB
-                        
-                    ob = OrderBlock(
-                        type="BULLISH",
-                        top=prev_candle['high'],
-                        bottom=prev_candle['low'],
-                        formed_at=ob_time,
-                        is_mitigated=False,
-                        strength=body_size_pips
-                    )
-                    
-                    # Check if mitigated since formation
-                    is_mitigated = False
-                    for k in range(j+1, len(df)):
-                        if df.iloc[k]['low'] <= ob.bottom:
-                            is_mitigated = True
-                            break
-                    
-                    if not is_mitigated:
-                        obs_dict[ob_time] = ob
-                    break # Found the last opposing candle
-                    
-        # Bearish OB check
-        elif next_candle['close'] < next_candle['open'] and body_size_pips > 5.0:
-            # Look back for the last bullish candle
-            for j in range(i, i - lookback, -1):
-                prev_candle = df.iloc[j]
-                if prev_candle['close'] > prev_candle['open']:
-                    ob_time = prev_candle.name if hasattr(prev_candle, 'name') else None
-                    if ob_time in obs_dict:
-                        break
+    if len(df) < lookback + 2:
+        return []
 
-                    ob = OrderBlock(
-                        type="BEARISH",
-                        top=prev_candle['high'],
-                        bottom=prev_candle['low'],
-                        formed_at=ob_time,
-                        is_mitigated=False,
-                        strength=body_size_pips
-                    )
+    # Vectorized acceleration: use numpy arrays
+    highs = df['high'].values
+    lows = df['low'].values
+    opens = df['open'].values
+    closes = df['close'].values
+    times = df.index.values
+
+    for i in range(lookback, len(df) - 1):
+        # Body size of the potential impulse candle (i+1)
+        body_size_pips = abs(closes[i+1] - opens[i+1]) / pip_value
+        
+        if body_size_pips > 5.0:
+            is_bullish_impulse = closes[i+1] > opens[i+1]
+            
+            # Look back for the last opposing candle
+            for j in range(i, i - lookback, -1):
+                is_opposing = (is_bullish_impulse and closes[j] < opens[j]) or \
+                              (not is_bullish_impulse and closes[j] > opens[j])
+                
+                if is_opposing:
+                    ob_time = times[j]
+                    if ob_time in obs_dict:
+                        continue # Already tracked this OB candle as part of another impulse
                     
-                    # Check if mitigated since formation
-                    is_mitigated = False
-                    for k in range(j+1, len(df)):
-                        if df.iloc[k]['high'] >= ob.top:
-                            is_mitigated = True
-                            break
+                    ob_top = highs[j]
+                    ob_bottom = lows[j]
+                    
+                    # Optimized mitigation check
+                    if is_bullish_impulse:
+                        is_mitigated = (lows[j+1:] <= ob_bottom).any()
+                    else:
+                        is_mitigated = (highs[j+1:] >= ob_top).any()
                     
                     if not is_mitigated:
-                        obs_dict[ob_time] = ob
-                    break
-                    
+                        obs_dict[ob_time] = OrderBlock(
+                            type="BULLISH" if is_bullish_impulse else "BEARISH",
+                            top=ob_top,
+                            bottom=ob_bottom,
+                            formed_at=ob_time,
+                            is_mitigated=False,
+                            strength=body_size_pips
+                        )
+                    break # Found the last opposing candle, move to next i
+
     return list(obs_dict.values())
 
 def detect_breaker_blocks(df: pd.DataFrame, symbol: str) -> list[BreakerBlock]:
     """
-    Finds Order Blocks that have been mitigated (price traded through them).
-    ...
+    Finds Order Blocks that have been mitigated (price closed through them).
     Returns list of active Breaker Blocks.
     """
-    # For breakers, we look for OBs that WERE mitigated by a strong move
-    # A breaker is an OB that price closed BEYOND.
     breakers = []
-    
-    # 1. Fetch RAW (unfiltered by mitigation) OBs by hijacking detect_order_blocks logic temporarily
-    # But for efficiency, we really only care about standard OB properties.
-    # To avoid writing an entirely new scanner, we will find ALL blocks and track mitigation status.
-    all_potential_obs = []
     pip_value = get_pip_value(symbol)
     lookback = settings.OB_LOOKBACK
     
-    # Fast re-scan, capturing the index for easy forward tracing
+    if len(df) < lookback + 2:
+        return []
+
+    highs = df['high'].values
+    lows = df['low'].values
+    opens = df['open'].values
+    closes = df['close'].values
+    times = df.index.values
+    
+    # 1. Identify all potential OBs (even if mitigated)
+    potential_obs = []
     for i in range(lookback, len(df) - 1):
-        next_candle = df.iloc[i+1]
-        body_size_pips = abs(next_candle['close'] - next_candle['open']) / pip_value
+        body_size_pips = abs(closes[i+1] - opens[i+1]) / pip_value
         if body_size_pips > 5.0:
+            is_bullish_impulse = closes[i+1] > opens[i+1]
             for j in range(i, i - lookback, -1):
-                prev_candle = df.iloc[j]
-                if (next_candle['close'] > next_candle['open'] and prev_candle['close'] < prev_candle['open']) or \
-                   (next_candle['close'] < next_candle['open'] and prev_candle['close'] > prev_candle['open']):
-                    all_potential_obs.append({
-                        "type": "BULLISH" if next_candle['close'] > next_candle['open'] else "BEARISH",
-                        "top": prev_candle['high'],
-                        "bottom": prev_candle['low'],
-                        "formed_at": prev_candle.name if hasattr(prev_candle, 'name') else None,
+                if (is_bullish_impulse and closes[j] < opens[j]) or \
+                   (not is_bullish_impulse and closes[j] > opens[j]):
+                    potential_obs.append({
+                        "type": "BULLISH" if is_bullish_impulse else "BEARISH",
+                        "top": highs[j],
+                        "bottom": lows[j],
+                        "formed_at": times[j],
                         "idx": j
                     })
                     break
                     
-    for ob in all_potential_obs:
-        # Check if price later closed BEYOND the OB (breaking it)
+    for ob in potential_obs:
+        # 2. Check if price closed BEYOND the OB
         broken = False
         broken_idx = -1
-        # Start checking after the impulse candle (ob['idx'] + 2 usually)
-        for k in range(ob["idx"] + 1, len(df)):
-            if ob["type"] == "BULLISH": # Original OB was bullish, so we look for price breaking BELOW it
-                if df.iloc[k]['close'] < ob["bottom"]:
-                    broken = True
-                    broken_idx = k
-                    break
-            else: # Original OB was bearish, looking for break ABOVE
-                if df.iloc[k]['close'] > ob["top"]:
-                    broken = True
-                    broken_idx = k
-                    break
+        
+        # Original OB was bullish, looking for close BELOW
+        if ob["type"] == "BULLISH":
+            mask = closes[ob["idx"]+1:] < ob["bottom"]
+            if mask.any():
+                broken = True
+                broken_idx = ob["idx"] + 1 + mask.argmax()
+        # Original OB was bearish, looking for close ABOVE
+        else:
+            mask = closes[ob["idx"]+1:] > ob["top"]
+            if mask.any():
+                broken = True
+                broken_idx = ob["idx"] + 1 + mask.argmax()
                     
         if broken:
-            # Now it acts as the OPPOSITE type
-            breaker = BreakerBlock(
-                type="BEARISH" if ob["type"] == "BULLISH" else "BULLISH",
-                top=ob["top"],
-                bottom=ob["bottom"],
-                formed_at=ob["formed_at"],
-                original_ob_type=ob["type"]
-            )
-            # Check if breaker itself is still "active" (price hasn't re-broken it)
-            active = True
-            for l in range(broken_idx + 1, len(df)):
-                if breaker.type == "BEARISH":
-                    if df.iloc[l]['close'] > breaker.top: # Price broke back above bearish breaker
-                        active = False
-                        break
-                else:
-                    if df.iloc[l]['close'] < breaker.bottom: # Price broke back below bullish breaker
-                        active = False
-                        break
-            if active:
-                breakers.append(breaker)
+            # 3. Acts as opposite type now
+            brk_type = "BEARISH" if ob["type"] == "BULLISH" else "BULLISH"
+            brk_top = ob["top"]
+            brk_bottom = ob["bottom"]
+            
+            # 4. Check if Breaker itself is still active (hasn't been closed back through)
+            is_invalid = False
+            if brk_type == "BEARISH":
+                # If price closes back ABOVE top
+                if (closes[broken_idx+1:] > brk_top).any():
+                    is_invalid = True
+            else:
+                # If price closes back BELOW bottom
+                if (closes[broken_idx+1:] < brk_bottom).any():
+                    is_invalid = True
+            
+            if not is_invalid:
+                breakers.append(BreakerBlock(
+                    type=brk_type,
+                    top=brk_top,
+                    bottom=brk_bottom,
+                    formed_at=ob["formed_at"],
+                    original_ob_type=ob["type"]
+                ))
                 
     return breakers
 
