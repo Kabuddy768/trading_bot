@@ -17,32 +17,43 @@ class TradeSetup:
     timeframe: str          # "15m" or "5m"
     timestamp: datetime
 
-def calculate_structural_sl(df: pd.DataFrame, direction: str, entry: float, symbol: str) -> tuple[float, float]:
+def calculate_structural_sl(df_mtf: pd.DataFrame, direction: str, entry: float, symbol: str) -> tuple[Optional[float], Optional[float]]:
     """
-    Calculates SL structurally based on recent swings instead of fixed pips.
+    Calculates SL structurally based on recent 15m swings.
     TP is projected using Risk/Reward Ratio based on the SL distance.
     """
     from risk.manager import get_pip_value
     pip_value = get_pip_value(symbol)
     
     if direction == "LONG":
-        # SL goes below the most recent swing low in the last 10 candles
-        recent_low = df['low'].iloc[-10:].min()
-        sl = recent_low - (2 * pip_value)  # 2 pip buffer below structure
+        # SL goes below the most recent swing low in the last 20 candles
+        recent_low = df_mtf['low'].iloc[-20:].min()
+        sl = recent_low - (2 * pip_value)
     else:
-        recent_high = df['high'].iloc[-10:].max()
+        recent_high = df_mtf['high'].iloc[-20:].max()
         sl = recent_high + (2 * pip_value)
-        
+            
+    # SL MUST be correctly positioned relative to entry
+    if direction == "LONG" and sl >= entry:
+        sl = entry - (10 * pip_value)
+    elif direction == "SHORT" and sl <= entry:
+        sl = entry + (10 * pip_value)
+            
     sl_dist = abs(entry - sl)
-    if sl_dist == 0:
-        sl_dist = 1.0 * pip_value
-        
-    rr_ratio = getattr(settings, 'RR_RATIO', 2.0)
     
-    if direction == "LONG":
-        tp = entry + (sl_dist * rr_ratio)
-    else:
-        tp = entry - (sl_dist * rr_ratio)
+    # Enforce min/max SL distance
+    min_sl = 10 * pip_value
+    max_sl = 200 * pip_value
+    
+    if sl_dist < min_sl:
+        sl_dist = min_sl
+        sl = entry - min_sl if direction == "LONG" else entry + min_sl
+        
+    if sl_dist > max_sl:
+        return None, None
+        
+    rr_ratio = getattr(settings, 'RR_RATIO', 3.0)
+    tp = entry + (sl_dist * rr_ratio) if direction == "LONG" else entry - (sl_dist * rr_ratio)
         
     return sl, tp
 
@@ -50,10 +61,10 @@ def score_setup(
     symbol: str,
     df_mtf: pd.DataFrame,
     bias: dict,
-    fvgs: list,        # Pass ALL fvgs, not pre-filtered
-    obs: list,         # Pass ALL obs
-    breakers: list,    # Pass ALL breakers  
-    zones: list,       # Pass ALL zones
+    fvgs: list,
+    obs: list,
+    breakers: list,
+    zones: list,
 ) -> Optional[TradeSetup]:
     """
     Combines all detected structures.
@@ -80,6 +91,20 @@ def score_setup(
     if len(avg_candle_range) >= 2 and current_range > multiplier * avg_candle_range.iloc[-2]:
         return None  # Exhausted move, skip
 
+    # --- Momentum Confirmation Filter ---
+    # Reject only if the Higher Timeframe structure has broken down
+    # i.e., if a swing low was taken out in the last 5 candles
+    if direction == "LONG":
+        recent_swing_low = df_mtf['low'].iloc[-20:].min()
+        last_5_lows = df_mtf['low'].iloc[-5:]
+        if (last_5_lows < recent_swing_low * 0.999).any():
+            return None  # Structure broken, skip
+    elif direction == "SHORT":
+        recent_swing_high = df_mtf['high'].iloc[-20:].max()
+        last_5_highs = df_mtf['high'].iloc[-5:]
+        if (last_5_highs > recent_swing_high * 1.001).any():
+            return None # Structure broken, skip
+
     confluences.append(f"HTF Bias: {bias['structure']} in {bias['zone']}")
     
     from risk.manager import get_pip_value
@@ -101,7 +126,8 @@ def score_setup(
     if near_fvgs:
         score += 1
         confluences.append(f"FVG present ({len(near_fvgs)})")
-        entry_price = near_fvgs[0].midpoint
+        # Change to near edge — fills faster, still inside the zone
+        entry_price = near_fvgs[0].top if direction == "LONG" else near_fvgs[0].bottom
         primary_zone = "FVG"
 
     # Score OBs — 15 pip window
@@ -169,6 +195,10 @@ def score_setup(
     min_required = settings.MIN_CONFLUENCES_BY_SYMBOL.get(symbol, settings.MIN_CONFLUENCES)
     if score >= min_required:
         sl, tp = calculate_structural_sl(df_mtf, direction, entry_price, symbol)
+        
+        if sl is None:
+            return None
+            
         return TradeSetup(
             symbol=symbol,
             direction=direction,

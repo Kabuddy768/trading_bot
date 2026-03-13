@@ -36,15 +36,15 @@ class Settings(BaseSettings):
     MIN_CONFLUENCES: int = 2         # Minimum confluences required to enter
     MIN_CONFLUENCES_BY_SYMBOL: dict = {
         "BTC/USDT": 3,
-        "ETH/USDT": 2,
+        "ETH/USDT": 3,
         "BNB/USDT": 2,
         "SOL/USDT": 2,
     }
     FVG_MIN_SIZE_PIPS: float = 2.0   # Minimum FVG size to be valid
     OB_LOOKBACK: int = 10            # Candles to look back for Order Blocks
     ZONE_STRENGTH_THRESHOLD: int = 2 # Minimum touches to validate S/D zone
-    ORDER_EXPIRY_CANDLES: int = 8    # How many candles a limit order stays valid
-    RR_RATIO: float = 2.0            # Risk:Reward Ratio based on structural SL
+    ORDER_EXPIRY_CANDLES: int = 6    # How many candles a limit order stays valid
+    RR_RATIO: float = 3.0            # Risk:Reward Ratio based on structural SL
     ATR_EXHAUSTION_MULTIPLIER: float = 2.0 # Cancel setup if candle > X * ATR(20)
 
     # Pip-based Risk

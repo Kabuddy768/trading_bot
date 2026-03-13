@@ -12,7 +12,7 @@ def detect_market_structure(df: pd.DataFrame) -> str:
     Returns:
         "BULLISH" | "BEARISH" | "RANGING"
     """
-    if len(df) < 20:
+    if len(df) < 50: # Increased minimum for EMA and enough pivots
         return "RANGING"
 
     # Minimal logic for finding local swing highs and lows (5-candle pivot: 2 left, 2 right)
@@ -22,7 +22,7 @@ def detect_market_structure(df: pd.DataFrame) -> str:
     swing_highs = []
     swing_lows = []
     
-    # Needs a minimum of 2 bars on each side
+    # 2-bar confirmation (reverting from 3-bar)
     for i in range(2, len(df) - 2):
         # Local High
         if highs[i] > highs[i-1] and highs[i] > highs[i-2] and \
@@ -34,23 +34,16 @@ def detect_market_structure(df: pd.DataFrame) -> str:
            lows[i] < lows[i+1] and lows[i] < lows[i+2]:
             swing_lows.append(lows[i])
 
-    if len(swing_highs) < 1 or len(swing_lows) < 1:
+    # REQUIRE at least 3 confirmed swing highs AND 3 swing lows before calling a trend
+    if len(swing_highs) < 3 or len(swing_lows) < 3:
         return "RANGING"
         
-    # Check Market Structure via latest 2 confirmed swings if available, otherwise 1
-    if len(swing_highs) >= 2 and len(swing_lows) >= 2:
-        last_hh = swing_highs[-1] > swing_highs[-2]
-        last_hl = swing_lows[-1] > swing_lows[-2]
-        
-        last_lh = swing_highs[-1] < swing_highs[-2]
-        last_ll = swing_lows[-1] < swing_lows[-2]
-    else:
-        # Strong trend, just use the slope of the extreme
-        last_hh = swing_highs[-1] > df['high'].values[0]
-        last_hl = swing_lows[-1] > df['low'].values[0]
-        
-        last_lh = swing_highs[-1] < df['high'].values[0]
-        last_ll = swing_lows[-1] < df['low'].values[0]
+    # Check Market Structure via latest 2 confirmed swings
+    last_hh = swing_highs[-1] > swing_highs[-2]
+    last_hl = swing_lows[-1] > swing_lows[-2]
+    
+    last_lh = swing_highs[-1] < swing_highs[-2]
+    last_ll = swing_lows[-1] < swing_lows[-2]
     
     if last_hh and last_hl:
         return "BULLISH"
@@ -76,6 +69,7 @@ def identify_premium_discount(df: pd.DataFrame) -> str:
     recent_swing_high = None
     recent_swing_low = None
     
+    # Revert to 2-bar confirmation for pivots
     for i in range(len(df) - 3, 2, -1):
         if highs[i] > highs[i-1] and highs[i] > highs[i-2] and \
            highs[i] > highs[i+1] and highs[i] > highs[i+2]:
@@ -91,7 +85,6 @@ def identify_premium_discount(df: pd.DataFrame) -> str:
             break
     
     # If no pivots found (strong trend), returning EQUILIBRIUM is safer than guessing a range
-    # because guessing with min/max usually places price at the extreme end of the trend
     if not recent_swing_high or not recent_swing_low:
         return "EQUILIBRIUM"
     
@@ -112,12 +105,19 @@ def identify_premium_discount(df: pd.DataFrame) -> str:
 
 def get_bias(symbol: str, df_htf: pd.DataFrame) -> dict:
     """
-    Master bias function. Combines market structure + premium/discount.
+    Master bias function. Combines market structure + premium/discount + EMA filter.
     """
+    # 0. EMA 200 Filter
+    if len(df_htf) >= 200:
+        ema200 = df_htf['close'].ewm(span=200, adjust=False).mean().iloc[-1]
+    else:
+        ema200 = None
+
     # 1. Structure Check
-    # We'll use a larger context for structure pivots
     highs = df_htf['high'].values
     lows = df_htf['low'].values
+    closes = df_htf['close'].values
+    current_price = closes[-1]
     
     swing_highs = []
     swing_lows = []
@@ -139,6 +139,14 @@ def get_bias(symbol: str, df_htf: pd.DataFrame) -> dict:
     elif structure == "BEARISH" and zone == "PREMIUM":
         tradeable = True
         direction = "SHORT"
+
+    # --- EMA 200 Filter ---
+    # Only approve LONG if price is above EMA 200, SHORT if below
+    if ema200 is not None:
+        if direction == "LONG" and current_price < ema200:
+            tradeable = False
+        elif direction == "SHORT" and current_price > ema200:
+            tradeable = False
 
     # --- Trend Exhaustion Filter ---
     # If structure is BULLISH but we see 3 consecutive lower highs, the trend is likely exhausting

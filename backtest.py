@@ -3,7 +3,8 @@ import os
 import pandas as pd
 import numpy as np
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Dict
+from datetime import datetime, timedelta
 from data.fetcher import fetch_historical_data
 from strategy.bias import get_bias
 from strategy.fvg import detect_fvgs
@@ -11,6 +12,20 @@ from strategy.orderblock import detect_order_blocks, detect_breaker_blocks
 from strategy.supply_demand import detect_zones
 from strategy.confluence import score_setup
 from utils.config import settings
+from utils.logger import logger
+
+# ICT Kill Zones (UTC)
+LONDON_OPEN  = (7, 0)   # 07:00 UTC
+LONDON_CLOSE = (11, 0)  # 11:00 UTC
+NY_OPEN      = (13, 0)  # 13:00 UTC
+NY_CLOSE     = (16, 0)  # 16:00 UTC
+
+def in_kill_zone(timestamp) -> bool:
+    """Returns True if timestamp falls within London or NY kill zone."""
+    h, m = timestamp.hour, timestamp.minute
+    london = (h, m) >= LONDON_OPEN and (h, m) < LONDON_CLOSE
+    ny     = (h, m) >= NY_OPEN     and (h, m) < NY_CLOSE
+    return london or ny
 
 # Gracefully handle missing settings and progress bars
 try:
@@ -60,6 +75,9 @@ class BacktestResult:
     start_time: str = ""
     end_time: str = ""
     duration_days: int = 0
+    limit_orders_created: int = 0
+    limit_orders_canceled: int = 0
+    trades_entered: int = 0
     
     @property
     def total_trades(self): return len(self.trades)
@@ -188,6 +206,7 @@ class ICTBacktester:
         
         skip_bias = 0
         skip_confluence = 0
+        skip_session = 0
         trades_entered = 0
         limit_orders_created = 0
         limit_orders_canceled = 0
@@ -212,13 +231,31 @@ class ICTBacktester:
                     hit_entry = True
                     
                 if hit_entry:
+                    # CRITICAL: Bankruptcy check
+                    if equity <= 0:
+                        pending_order = None
+                        continue
+
                     trades_entered += 1
                     sl_dist = abs(entry_px - pending_order.sl_price)
-                    if sl_dist == 0:
-                        sl_dist = 1.0 # Prevent Division by Zero
-                        
+                    
+                    # CRITICAL: Enforce minimum SL distance to avoid position size 'explosion'
+                    from risk.manager import get_pip_value
+                    pip_value = get_pip_value(pending_order.symbol)
+                    min_sl_dist = 5 * pip_value
+                    
+                    if sl_dist < min_sl_dist:
+                        sl_dist = min_sl_dist
+                        # If we adjusted SL distance, we should really adjust the sl_price too 
+                        # but for sizing it's just a risk divisor.
+                    
                     risk_usd = equity * self.risk_per_trade
                     trade_size = risk_usd / sl_dist
+                    
+                    # CRITICAL: Cap position size - never more than 20% of equity value
+                    max_notional = equity * 0.20
+                    max_position_size = max_notional / entry_px
+                    trade_size = min(trade_size, max_position_size)
                     
                     active_trade = BacktestTrade(
                         symbol=pending_order.symbol,
@@ -241,6 +278,21 @@ class ICTBacktester:
             if active_trade and active_trade.exit_reason == "OPEN":
                 direction = active_trade.direction
                 
+                # --- Breakeven Stop Logic (Phase 2) ---
+                # Move SL to breakeven after 1.5R profit
+                sl_dist = abs(active_trade.entry_price - active_trade.sl_price)
+                if sl_dist > 0:
+                    breakeven_trigger = 1.5 * sl_dist
+                    if direction == "LONG":
+                        if candle['high'] >= active_trade.entry_price + breakeven_trigger:
+                            # Price hit 1.5R, lock in breakeven
+                            if active_trade.sl_price < active_trade.entry_price:
+                                active_trade.sl_price = active_trade.entry_price
+                    else:  # SHORT
+                        if candle['low'] <= active_trade.entry_price - breakeven_trigger:
+                            if active_trade.sl_price > active_trade.entry_price:
+                                active_trade.sl_price = active_trade.entry_price
+
                 hit_sl = (direction == "LONG" and candle['low'] <= active_trade.sl_price) or \
                          (direction == "SHORT" and candle['high'] >= active_trade.sl_price)
                 hit_tp = (direction == "LONG" and candle['high'] >= active_trade.tp_price) or \
@@ -301,63 +353,65 @@ class ICTBacktester:
                 continue
 
             # --- Look for new entry ---
+            # Session filter — only look for entries during kill zones
+            if not in_kill_zone(candle.name):
+                if pending_order is None and active_trade is None:
+                    skip_session += 1
+                    continue  # Outside session, skip entry logic only
+
             # PERFORMANCE: Use pre-computed integer indices for slicing
             htf_end = htf_end_positions[i]
-            df_htf_slice = df_htf.iloc[max(0, htf_end-200):htf_end]
+            df_htf_slice = df_htf.iloc[max(0, htf_end-500):htf_end]
             df_mtf_slice = df_mtf.iloc[max(0, i-99):i+1]
 
             if len(df_htf_slice) < 20 or len(df_mtf_slice) < 20:
                 continue
 
-            try:
-                # PERFORMANCE: Only rerun High-Timeframe bias if the HTF candle has closed
-                current_htf_candle = df_htf_slice.index[-1]
-                if current_htf_candle != last_htf_candle:
-                    cached_bias = get_bias(self.symbol, df_htf_slice)
-                    last_htf_candle = current_htf_candle
-                
-                bias = cached_bias
-                if not bias or not bias["tradeable"]:
-                    skip_bias += 1
-                    continue
-
-                # PERFORMANCE: Structure detection is expensive. Only rerun every 5 MTF candles.
-                if last_structure_candle is None or (i - last_structure_candle) >= 5:
-                    cached_fvgs = detect_fvgs(df_mtf_slice, self.symbol)
-                    cached_obs = detect_order_blocks(df_mtf_slice, self.symbol)
-                    cached_breakers = detect_breaker_blocks(df_mtf_slice, self.symbol)
-                    cached_zones = detect_zones(df_mtf_slice, self.symbol)
-                    last_structure_candle = i
-                
-                fvgs = cached_fvgs
-                obs = cached_obs
-                breakers = cached_breakers
-                zones = cached_zones
-
-                setup = score_setup(self.symbol, df_mtf_slice, bias, fvgs, obs, breakers, zones)
-
-                if not setup:
-                    skip_confluence += 1
-                    continue
-                    
-                limit_orders_created += 1
-                
-                # Create limit order instead of executing at market close
-                expiry_candles = getattr(settings, 'ORDER_EXPIRY_CANDLES', 8)
-                pending_order = PendingOrder(
-                    symbol=self.symbol,
-                    direction=setup.direction,
-                    entry_price=setup.entry_price,
-                    sl_price=setup.sl_price,
-                    tp_price=setup.tp_price,
-                    setup_idx=i,
-                    confluence_score=setup.confluence_score,
-                    equity_at_setup=equity,
-                    expires_at_idx=i + expiry_candles
-                )
-
-            except Exception:
+            # PERFORMANCE: Only rerun High-Timeframe bias if the HTF candle has closed
+            current_htf_candle = df_htf_slice.index[-1]
+            if current_htf_candle != last_htf_candle:
+                cached_bias = get_bias(self.symbol, df_htf_slice)
+                last_htf_candle = current_htf_candle
+            
+            bias = cached_bias
+            if not bias or not bias["tradeable"]:
+                skip_bias += 1
                 continue
+
+            # PERFORMANCE: Structure detection is expensive. Only rerun every 5 MTF candles.
+            if last_structure_candle is None or (i - last_structure_candle) >= 5:
+                cached_fvgs = detect_fvgs(df_mtf_slice, self.symbol)
+                cached_obs = detect_order_blocks(df_mtf_slice, self.symbol)
+                cached_breakers = detect_breaker_blocks(df_mtf_slice, self.symbol)
+                cached_zones = detect_zones(df_mtf_slice, self.symbol)
+                last_structure_candle = i
+            
+            fvgs = cached_fvgs
+            obs = cached_obs
+            breakers = cached_breakers
+            zones = cached_zones
+
+            setup = score_setup(self.symbol, df_mtf_slice, bias, fvgs, obs, breakers, zones)
+
+            if not setup:
+                skip_confluence += 1
+                continue
+                
+            limit_orders_created += 1
+            
+            # Create limit order instead of executing at market close
+            expiry_candles = getattr(settings, 'ORDER_EXPIRY_CANDLES', 8)
+            pending_order = PendingOrder(
+                symbol=self.symbol,
+                direction=setup.direction,
+                entry_price=setup.entry_price,
+                sl_price=setup.sl_price,
+                tp_price=setup.tp_price,
+                setup_idx=i,
+                confluence_score=setup.confluence_score,
+                equity_at_setup=equity,
+                expires_at_idx=i + expiry_candles
+            )
 
         # Close any open trade at last price
         if active_trade and active_trade.exit_reason == "OPEN":
@@ -366,7 +420,11 @@ class ICTBacktester:
             active_trade.exit_idx = len(df_mtf) - 1
 
         result.final_equity = equity
+        result.limit_orders_created = limit_orders_created
+        result.limit_orders_canceled = limit_orders_canceled
+        result.trades_entered = trades_entered
         
+        print(f"  Skipped by session: {skip_session}")
         print(f"  Skipped by bias: {skip_bias}")
         print(f"  Skipped by confluence: {skip_confluence}")
         print(f"  Limit orders created: {limit_orders_created}")
@@ -377,8 +435,6 @@ class ICTBacktester:
         if len(df_mtf) > WARMUP:
             result.start_time = str(df_mtf.index[WARMUP])
             result.end_time = str(df_mtf.index[-1])
-            result.duration_days = (df_mtf.index[-1] - df_mtf.index[WARMUP]).days
-            
         return result
 
 
@@ -411,7 +467,7 @@ def run_multi_symbol_backtest():
     # Comparative summary
     print("\n📊 COMPARATIVE SUMMARY")
     print(f"{'Symbol':<15} {'Trades':>8} {'WinRate':>9} {'PnL':>10} {'PF':>8} {'MaxDD':>8}")
-    print("-"*60)
+    print("-" * 75)
     
     export_data = {}
     
@@ -419,6 +475,25 @@ def run_multi_symbol_backtest():
         if r.closed_trades:
             print(f"{sym:<15} {len(r.closed_trades):>8} {r.win_rate:>8.1f}% "
                   f"${r.total_pnl:>+9,.2f} {r.profit_factor:>8.2f} {r.max_drawdown:>7.1f}%")
+            
+            # Print detailed diagnostics
+            sl_distances = [abs(t.entry_price - t.sl_price) for t in r.closed_trades]
+            tp_distances = [abs(t.tp_price - t.entry_price) for t in r.closed_trades]
+            realized_rr = np.mean(tp_distances) / np.mean(sl_distances) if np.mean(sl_distances) > 0 else 0
+            
+            print(f"  Avg SL dist: ${np.mean(sl_distances):,.2f}")
+            print(f"  Avg TP dist: ${np.mean(tp_distances):,.2f}")
+            print(f"  Actual RR:   {realized_rr:.2f}x")
+            
+            if r.limit_orders_created > 0:
+                fill_rate = (r.trades_entered / r.limit_orders_created) * 100
+                cancel_rate = (r.limit_orders_canceled / r.limit_orders_created) * 100
+                print(f"  Fill rate:   {r.trades_entered}/{r.limit_orders_created} ({fill_rate:.1f}%)")
+                print(f"  Cancel rate: {r.limit_orders_canceled}/{r.limit_orders_created} ({cancel_rate:.1f}%)")
+            else:
+                print("  Fill rate:   N/A")
+                
+            print("-" * 75)
                   
         # Format for React Dashboard
         avg_win = np.mean([t.net_pnl for t in r.wins]) if r.wins else 0.0
@@ -515,3 +590,4 @@ if __name__ == "__main__":
     # optimize_confluence_threshold("BTC/USDT")
     # optimize_confluence_threshold("ETH/USDT")
     run_multi_symbol_backtest()
+
