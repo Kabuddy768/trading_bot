@@ -148,17 +148,6 @@ def get_bias(symbol: str, df_htf: pd.DataFrame) -> dict:
         elif direction == "SHORT" and current_price > ema200:
             tradeable = False
 
-    # --- Trend Exhaustion Filter ---
-    # If structure is BULLISH but we see 3 consecutive lower highs, the trend is likely exhausting
-    if tradeable and structure == "BULLISH" and len(swing_highs) >= 3:
-        if swing_highs[-1] < swing_highs[-2] < swing_highs[-3]:
-            tradeable = False
-            
-    # If structure is BEARISH but we see 3 consecutive higher lows
-    if tradeable and structure == "BEARISH" and len(swing_lows) >= 3:
-        if swing_lows[-1] > swing_lows[-2] > swing_lows[-3]:
-            tradeable = False
-        
     return {
         "symbol": symbol,
         "structure": structure,

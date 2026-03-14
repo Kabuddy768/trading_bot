@@ -493,6 +493,18 @@ def run_multi_symbol_backtest():
             else:
                 print("  Fill rate:   N/A")
                 
+            # Wins/Losses by Confluence Score
+            wins_by_zone = {}
+            losses_by_zone = {}
+            for t in r.closed_trades:
+                score = t.confluence_score
+                if t.exit_reason == "TAKE_PROFIT":
+                    wins_by_zone[score] = wins_by_zone.get(score, 0) + 1
+                else:
+                    losses_by_zone[score] = losses_by_zone.get(score, 0) + 1
+            
+            print(f"  Wins by score:  {dict(sorted(wins_by_zone.items()))}")
+            print(f"  Losses by score: {dict(sorted(losses_by_zone.items()))}")
             print("-" * 75)
                   
         # Format for React Dashboard

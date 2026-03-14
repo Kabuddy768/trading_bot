@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     MAX_TRADE_HOURS: int = 48           # Hard stop if position is open for 48 hours
 
     # ICT Strategy Settings
-    ICT_SYMBOLS: list = ["BTC/USDT", "ETH/USDT", "BNB/USDT", "SOL/USDT"]
+    ICT_SYMBOLS: list = ["ETH/USDT", "SOL/USDT"]
     BIAS_TIMEFRAME: str = "1h"       # HTF for market structure bias
     SETUP_TIMEFRAME: str = "15m"     # MTF for setup detection
     ENTRY_TIMEFRAME: str = "5m"      # LTF for entry refinement
@@ -35,15 +35,17 @@ class Settings(BaseSettings):
     # ICT Signal Thresholds
     MIN_CONFLUENCES: int = 2         # Minimum confluences required to enter
     MIN_CONFLUENCES_BY_SYMBOL: dict = {
-        "BTC/USDT": 3,
         "ETH/USDT": 3,
-        "BNB/USDT": 2,
         "SOL/USDT": 2,
+    }
+    MAX_CONFLUENCES_BY_SYMBOL: dict = {
+        "ETH/USDT": 3,
+        "SOL/USDT": 3,
     }
     FVG_MIN_SIZE_PIPS: float = 2.0   # Minimum FVG size to be valid
     OB_LOOKBACK: int = 10            # Candles to look back for Order Blocks
     ZONE_STRENGTH_THRESHOLD: int = 2 # Minimum touches to validate S/D zone
-    ORDER_EXPIRY_CANDLES: int = 6    # How many candles a limit order stays valid
+    ORDER_EXPIRY_CANDLES: int = 12   # Increased from 6 to improve fill rate
     RR_RATIO: float = 3.0            # Risk:Reward Ratio based on structural SL
     ATR_EXHAUSTION_MULTIPLIER: float = 2.0 # Cancel setup if candle > X * ATR(20)
 
@@ -53,7 +55,7 @@ class Settings(BaseSettings):
         "BTC/USDT": 50.0,   # SL=$250, TP=$1000 — real room to breathe
         "ETH/USDT": 5.0,    # SL=$50,  TP=$200
         "BNB/USDT": 2.0,    # SL=$30,  TP=$120
-        "SOL/USDT": 1.0     # SL=$20,  TP=$80
+        "SOL/USDT": 0.5     # Reduced from 1.0 to allow for wider structural SLs
     }
     SL_PIPS_BY_SYMBOL: dict = {
         "BTC/USDT": 5,

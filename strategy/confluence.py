@@ -92,18 +92,19 @@ def score_setup(
         return None  # Exhausted move, skip
 
     # --- Momentum Confirmation Filter ---
-    # Reject only if the Higher Timeframe structure has broken down
-    # i.e., if a swing low was taken out in the last 5 candles
-    if direction == "LONG":
-        recent_swing_low = df_mtf['low'].iloc[-20:].min()
-        last_5_lows = df_mtf['low'].iloc[-5:]
-        if (last_5_lows < recent_swing_low * 0.999).any():
-            return None  # Structure broken, skip
-    elif direction == "SHORT":
-        recent_swing_high = df_mtf['high'].iloc[-20:].max()
-        last_5_highs = df_mtf['high'].iloc[-5:]
-        if (last_5_highs > recent_swing_high * 1.001).any():
-            return None # Structure broken, skip
+    # Reject only if the structure has genuinely broken down
+    # Use candles -25 to -5 as the "established" structure reference
+    if len(df_mtf) >= 25:
+        if direction == "LONG":
+            reference_low = df_mtf['low'].iloc[-25:-5].min()
+            last_5_lows = df_mtf['low'].iloc[-5:]
+            if (last_5_lows < reference_low * 0.998).any():
+                return None  # Recent candles broke established structure
+        elif direction == "SHORT":
+            reference_high = df_mtf['high'].iloc[-25:-5].max()
+            last_5_highs = df_mtf['high'].iloc[-5:]
+            if (last_5_highs > reference_high * 1.002).any():
+                return None  # Recent candles broke established structure
 
     confluences.append(f"HTF Bias: {bias['structure']} in {bias['zone']}")
     
@@ -126,8 +127,8 @@ def score_setup(
     if near_fvgs:
         score += 1
         confluences.append(f"FVG present ({len(near_fvgs)})")
-        # Change to near edge — fills faster, still inside the zone
-        entry_price = near_fvgs[0].top if direction == "LONG" else near_fvgs[0].bottom
+        # Use midpoint (Consequent Encroachment) — much higher fill probability
+        entry_price = near_fvgs[0].midpoint
         primary_zone = "FVG"
 
     # Score OBs — 15 pip window
@@ -193,23 +194,31 @@ def score_setup(
             primary_zone = "ZONE"
 
     min_required = settings.MIN_CONFLUENCES_BY_SYMBOL.get(symbol, settings.MIN_CONFLUENCES)
-    if score >= min_required:
-        sl, tp = calculate_structural_sl(df_mtf, direction, entry_price, symbol)
+    max_allowed = settings.MAX_CONFLUENCES_BY_SYMBOL.get(symbol, 99)
+    
+    if score < min_required:
+        return None
         
-        if sl is None:
-            return None
-            
-        return TradeSetup(
-            symbol=symbol,
-            direction=direction,
-            entry_price=entry_price,
-            sl_price=sl,
-            tp_price=tp,
-            confluence_score=score,
-            confluences=confluences,
-            primary_zone=primary_zone,
-            timeframe=settings.SETUP_TIMEFRAME,
-            timestamp=datetime.now()
-        )
+    if score > max_allowed:
+        # Too many confluences often mean the move is already over (exhausted)
+        return None
+        
+    sl, tp = calculate_structural_sl(df_mtf, direction, entry_price, symbol)
+    
+    if sl is None:
+        return None
+        
+    return TradeSetup(
+        symbol=symbol,
+        direction=direction,
+        entry_price=entry_price,
+        sl_price=sl,
+        tp_price=tp,
+        confluence_score=score,
+        confluences=confluences,
+        primary_zone=primary_zone,
+        timeframe=settings.SETUP_TIMEFRAME,
+        timestamp=datetime.now()
+    )
     
     return None

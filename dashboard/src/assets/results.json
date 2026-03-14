@@ -1,953 +1,19 @@
 {
-  "BTC/USDT": {
-    "startEquity": 10000.0,
-    "finalEquity": 9427.960043547857,
-    "totalPnl": -572.0399564521398,
-    "returnPct": -5.720399564521398,
-    "totalTrades": 65,
-    "wins": 12,
-    "losses": 53,
-    "openTrades": 0,
-    "winRate": 18.461538461538463,
-    "avgWin": 28.332916959459737,
-    "avgLoss": -17.208206791804844,
-    "profitFactor": 0.5449143377257604,
-    "maxDrawdown": 5.720399564521431,
-    "sharpe": -3.397052662756604,
-    "color": "#ff4757",
-    "startTime": "2024-01-01 12:30:00",
-    "endTime": "2026-03-10 23:45:00",
-    "durationDays": 0,
-    "equitySeries": [
-      {
-        "trade": 1,
-        "equity": 9996.0,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 2,
-        "equity": 9975.84,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 3,
-        "equity": 9906.51,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 4,
-        "equity": 9887.57,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 5,
-        "equity": 9844.72,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 6,
-        "equity": 9889.87,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 7,
-        "equity": 9885.91,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 8,
-        "equity": 9842.12,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 9,
-        "equity": 9822.23,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 10,
-        "equity": 9804.29,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 11,
-        "equity": 9784.92,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 12,
-        "equity": 9763.78,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 13,
-        "equity": 9743.15,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 14,
-        "equity": 9723.94,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 15,
-        "equity": 9720.05,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 16,
-        "equity": 9700.63,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 17,
-        "equity": 9696.75,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 18,
-        "equity": 9725.9,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 19,
-        "equity": 9703.3,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 20,
-        "equity": 9689.36,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 21,
-        "equity": 9675.47,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 22,
-        "equity": 9662.12,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 23,
-        "equity": 9643.6,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 24,
-        "equity": 9629.45,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 25,
-        "equity": 9613.82,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 26,
-        "equity": 9574.47,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 27,
-        "equity": 9598.81,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 28,
-        "equity": 9594.97,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 29,
-        "equity": 9580.25,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 30,
-        "equity": 9576.42,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 31,
-        "equity": 9605.87,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 32,
-        "equity": 9590.24,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 33,
-        "equity": 9567.65,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 34,
-        "equity": 9552.65,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 35,
-        "equity": 9583.11,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 36,
-        "equity": 9567.95,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 37,
-        "equity": 9553.89,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 38,
-        "equity": 9539.59,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 39,
-        "equity": 9520.12,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 40,
-        "equity": 9506.22,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 41,
-        "equity": 9502.42,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 42,
-        "equity": 9533.38,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 43,
-        "equity": 9520.34,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 44,
-        "equity": 9492.05,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 45,
-        "equity": 9488.25,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 46,
-        "equity": 9469.47,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 47,
-        "equity": 9457.68,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 48,
-        "equity": 9478.44,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 49,
-        "equity": 9500.13,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 50,
-        "equity": 9496.33,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 51,
-        "equity": 9484.35,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 52,
-        "equity": 9505.7,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 53,
-        "equity": 9501.89,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 54,
-        "equity": 9482.6,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 55,
-        "equity": 9462.96,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 56,
-        "equity": 9450.62,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 57,
-        "equity": 9472.63,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 58,
-        "equity": 9468.84,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 59,
-        "equity": 9496.56,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 60,
-        "equity": 9472.31,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 61,
-        "equity": 9451.78,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 62,
-        "equity": 9488.75,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 63,
-        "equity": 9484.95,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 64,
-        "equity": 9455.27,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 65,
-        "equity": 9427.96,
-        "reason": "STOP_LOSS"
-      }
-    ],
-    "trades": [
-      {
-        "id": 427,
-        "dir": "LONG",
-        "entry": 43527.67,
-        "exit": 43527.67,
-        "reason": "STOP_LOSS",
-        "pnl": -4.0,
-        "score": 3
-      },
-      {
-        "id": 5818,
-        "dir": "LONG",
-        "entry": 61791.33,
-        "exit": 61291.33,
-        "reason": "STOP_LOSS",
-        "pnl": -20.1592497502805,
-        "score": 3
-      },
-      {
-        "id": 6173,
-        "dir": "LONG",
-        "entry": 67191.77,
-        "exit": 64989.0,
-        "reason": "STOP_LOSS",
-        "pnl": -69.33318482663277,
-        "score": 3
-      },
-      {
-        "id": 7330,
-        "dir": "SHORT",
-        "entry": 66235.68,
-        "exit": 66735.68,
-        "reason": "STOP_LOSS",
-        "pnl": -18.934011295833727,
-        "score": 3
-      },
-      {
-        "id": 7613,
-        "dir": "SHORT",
-        "entry": 62341.1,
-        "exit": 63566.21,
-        "reason": "STOP_LOSS",
-        "pnl": -42.855461406757804,
-        "score": 3
-      },
-      {
-        "id": 7640,
-        "dir": "SHORT",
-        "entry": 63922.89,
-        "exit": 62330.85,
-        "reason": "TAKE_PROFIT",
-        "pnl": 45.14893651986985,
-        "score": 3
-      },
-      {
-        "id": 9750,
-        "dir": "LONG",
-        "entry": 70017.0,
-        "exit": 70017.0,
-        "reason": "STOP_LOSS",
-        "pnl": -3.955946811696146,
-        "score": 3
-      },
-      {
-        "id": 12137,
-        "dir": "LONG",
-        "entry": 65257.82,
-        "exit": 63941.54,
-        "reason": "STOP_LOSS",
-        "pnl": -43.795151062189596,
-        "score": 4
-      },
-      {
-        "id": 12444,
-        "dir": "SHORT",
-        "entry": 61755.59,
-        "exit": 62255.59,
-        "reason": "STOP_LOSS",
-        "pnl": -19.88999012406422,
-        "score": 3
-      },
-      {
-        "id": 13598,
-        "dir": "LONG",
-        "entry": 70063.8,
-        "exit": 69563.8,
-        "reason": "STOP_LOSS",
-        "pnl": -17.93384545358552,
-        "score": 3
-      },
-      {
-        "id": 17501,
-        "dir": "LONG",
-        "entry": 63410.0,
-        "exit": 62910.0,
-        "reason": "STOP_LOSS",
-        "pnl": -19.367999449406906,
-        "score": 4
-      },
-      {
-        "id": 18178,
-        "dir": "SHORT",
-        "entry": 56839.26,
-        "exit": 57339.26,
-        "reason": "STOP_LOSS",
-        "pnl": -21.146264746592703,
-        "score": 3
-      },
-      {
-        "id": 21828,
-        "dir": "SHORT",
-        "entry": 58455.68,
-        "exit": 58955.68,
-        "reason": "STOP_LOSS",
-        "pnl": -20.62508673149155,
-        "score": 4
-      },
-      {
-        "id": 25768,
-        "dir": "LONG",
-        "entry": 63545.2,
-        "exit": 63045.2,
-        "reason": "STOP_LOSS",
-        "pnl": -19.21456215627227,
-        "score": 3
-      },
-      {
-        "id": 26539,
-        "dir": "SHORT",
-        "entry": 60978.0,
-        "exit": 60978.0,
-        "reason": "STOP_LOSS",
-        "pnl": -3.889575273082026,
-        "score": 3
-      },
-      {
-        "id": 27023,
-        "dir": "SHORT",
-        "entry": 62657.05,
-        "exit": 63157.05,
-        "reason": "STOP_LOSS",
-        "pnl": -19.416629002534584,
-        "score": 4
-      },
-      {
-        "id": 30586,
-        "dir": "LONG",
-        "entry": 90620.27,
-        "exit": 90620.27,
-        "reason": "STOP_LOSS",
-        "pnl": -3.880252791371779,
-        "score": 3
-      },
-      {
-        "id": 30685,
-        "dir": "LONG",
-        "entry": 88000.0,
-        "exit": 89500.0,
-        "reason": "TAKE_PROFIT",
-        "pnl": 29.14535035717353,
-        "score": 5
-      },
-      {
-        "id": 31062,
-        "dir": "LONG",
-        "entry": 91985.71,
-        "exit": 91100.0,
-        "reason": "STOP_LOSS",
-        "pnl": -22.601330295162864,
-        "score": 3
-      },
-      {
-        "id": 31260,
-        "dir": "LONG",
-        "entry": 96456.51,
-        "exit": 95956.51,
-        "reason": "STOP_LOSS",
-        "pnl": -13.93102095697501,
-        "score": 3
-      },
-      {
-        "id": 31642,
-        "dir": "LONG",
-        "entry": 96636.39,
-        "exit": 96136.39,
-        "reason": "STOP_LOSS",
-        "pnl": -13.892340425370232,
-        "score": 3
-      },
-      {
-        "id": 33437,
-        "dir": "LONG",
-        "entry": 101904.75,
-        "exit": 101404.75,
-        "reason": "STOP_LOSS",
-        "pnl": -13.355317872578691,
-        "score": 4
-      },
-      {
-        "id": 33631,
-        "dir": "LONG",
-        "entry": 104956.0,
-        "exit": 104159.48,
-        "reason": "STOP_LOSS",
-        "pnl": -18.515506943730344,
-        "score": 3
-      },
-      {
-        "id": 35966,
-        "dir": "SHORT",
-        "entry": 93800.0,
-        "exit": 94300.0,
-        "reason": "STOP_LOSS",
-        "pnl": -14.148746765656576,
-        "score": 3
-      },
-      {
-        "id": 36605,
-        "dir": "LONG",
-        "entry": 99680.45,
-        "exit": 99070.0,
-        "reason": "STOP_LOSS",
-        "pnl": -15.634274422556333,
-        "score": 3
-      },
-      {
-        "id": 37022,
-        "dir": "LONG",
-        "entry": 107357.22,
-        "exit": 105372.95,
-        "reason": "STOP_LOSS",
-        "pnl": -39.348189088769864,
-        "score": 3
-      },
-      {
-        "id": 38174,
-        "dir": "SHORT",
-        "entry": 102084.89,
-        "exit": 100584.89,
-        "reason": "TAKE_PROFIT",
-        "pnl": 24.335138578378892,
-        "score": 3
-      },
-      {
-        "id": 39318,
-        "dir": "SHORT",
-        "entry": 96165.01,
-        "exit": 96165.01,
-        "reason": "STOP_LOSS",
-        "pnl": -3.8395221951211305,
-        "score": 3
-      },
-      {
-        "id": 41245,
-        "dir": "LONG",
-        "entry": 88150.95,
-        "exit": 87650.95,
-        "reason": "STOP_LOSS",
-        "pnl": -14.711801132019612,
-        "score": 5
-      },
-      {
-        "id": 41317,
-        "dir": "LONG",
-        "entry": 90665.4,
-        "exit": 90665.4,
-        "reason": "STOP_LOSS",
-        "pnl": -3.8321016657902733,
-        "score": 3
-      },
-      {
-        "id": 41509,
-        "dir": "SHORT",
-        "entry": 86403.38,
-        "exit": 84903.38,
-        "reason": "TAKE_PROFIT",
-        "pnl": 29.452846076721443,
-        "score": 3
-      },
-      {
-        "id": 41797,
-        "dir": "SHORT",
-        "entry": 81528.93,
-        "exit": 82028.93,
-        "reason": "STOP_LOSS",
-        "pnl": -15.636299404318192,
-        "score": 3
-      },
-      {
-        "id": 41821,
-        "dir": "SHORT",
-        "entry": 81528.93,
-        "exit": 82325.21,
-        "reason": "STOP_LOSS",
-        "pnl": -22.588093575397618,
-        "score": 3
-      },
-      {
-        "id": 42664,
-        "dir": "LONG",
-        "entry": 85546.43,
-        "exit": 85046.43,
-        "reason": "STOP_LOSS",
-        "pnl": -15.000037109538024,
-        "score": 3
-      },
-      {
-        "id": 44001,
-        "dir": "SHORT",
-        "entry": 83684.86,
-        "exit": 82184.86,
-        "reason": "TAKE_PROFIT",
-        "pnl": 30.458269890204896,
-        "score": 3
-      },
-      {
-        "id": 45365,
-        "dir": "LONG",
-        "entry": 84553.07,
-        "exit": 84053.07,
-        "reason": "STOP_LOSS",
-        "pnl": -15.155748572252254,
-        "score": 3
-      },
-      {
-        "id": 45943,
-        "dir": "LONG",
-        "entry": 93371.48,
-        "exit": 92871.48,
-        "reason": "STOP_LOSS",
-        "pnl": -14.064124051455574,
-        "score": 5
-      },
-      {
-        "id": 45947,
-        "dir": "LONG",
-        "entry": 93076.65,
-        "exit": 92566.01,
-        "reason": "STOP_LOSS",
-        "pnl": -14.29404079319604,
-        "score": 3
-      },
-      {
-        "id": 46422,
-        "dir": "LONG",
-        "entry": 95020.0,
-        "exit": 94239.48,
-        "reason": "STOP_LOSS",
-        "pnl": -19.472328601893302,
-        "score": 4
-      },
-      {
-        "id": 47197,
-        "dir": "SHORT",
-        "entry": 94433.5,
-        "exit": 94933.5,
-        "reason": "STOP_LOSS",
-        "pnl": -13.8994282580964,
-        "score": 3
-      },
-      {
-        "id": 47458,
-        "dir": "LONG",
-        "entry": 102901.94,
-        "exit": 102901.94,
-        "reason": "STOP_LOSS",
-        "pnl": -3.80248923136427,
-        "score": 3
-      },
-      {
-        "id": 47460,
-        "dir": "LONG",
-        "entry": 102901.94,
-        "exit": 104785.67000000001,
-        "reason": "TAKE_PROFIT",
-        "pnl": 30.954634509462892,
-        "score": 3
-      },
-      {
-        "id": 48606,
-        "dir": "LONG",
-        "entry": 106657.76,
-        "exit": 106141.63,
-        "reason": "STOP_LOSS",
-        "pnl": -13.030758167890411,
-        "score": 4
-      },
-      {
-        "id": 49477,
-        "dir": "SHORT",
-        "entry": 105063.38,
-        "exit": 106413.12,
-        "reason": "STOP_LOSS",
-        "pnl": -28.294004752664144,
-        "score": 5
-      },
-      {
-        "id": 54178,
-        "dir": "LONG",
-        "entry": 118610.0,
-        "exit": 118610.0,
-        "reason": "STOP_LOSS",
-        "pnl": -3.796820184307287,
-        "score": 3
-      },
-      {
-        "id": 54494,
-        "dir": "LONG",
-        "entry": 118616.24,
-        "exit": 117678.7,
-        "reason": "STOP_LOSS",
-        "pnl": -18.779289653591572,
-        "score": 3
-      },
-      {
-        "id": 55256,
-        "dir": "LONG",
-        "entry": 118095.59,
-        "exit": 117595.59,
-        "reason": "STOP_LOSS",
-        "pnl": -11.79825387081035,
-        "score": 3
-      },
-      {
-        "id": 55547,
-        "dir": "SHORT",
-        "entry": 115700.0,
-        "exit": 114200.0,
-        "reason": "TAKE_PROFIT",
-        "pnl": 20.764381004105932,
-        "score": 4
-      },
-      {
-        "id": 55613,
-        "dir": "SHORT",
-        "entry": 113654.73,
-        "exit": 112128.44999999997,
-        "reason": "TAKE_PROFIT",
-        "pnl": 21.691453932944587,
-        "score": 3
-      },
-      {
-        "id": 56194,
-        "dir": "LONG",
-        "entry": 116488.0,
-        "exit": 116488.0,
-        "reason": "STOP_LOSS",
-        "pnl": -3.8000527727986237,
-        "score": 3
-      },
-      {
-        "id": 59655,
-        "dir": "LONG",
-        "entry": 115960.9,
-        "exit": 115460.9,
-        "reason": "STOP_LOSS",
-        "pnl": -11.97959684083036,
-        "score": 3
-      },
-      {
-        "id": 61286,
-        "dir": "LONG",
-        "entry": 113079.23,
-        "exit": 114579.23,
-        "reason": "TAKE_PROFIT",
-        "pnl": 21.343150972764164,
-        "score": 3
-      },
-      {
-        "id": 62345,
-        "dir": "SHORT",
-        "entry": 111951.59,
-        "exit": 111951.59,
-        "reason": "STOP_LOSS",
-        "pnl": -3.8022781733422777,
-        "score": 4
-      },
-      {
-        "id": 62550,
-        "dir": "SHORT",
-        "entry": 114604.63,
-        "exit": 115538.17,
-        "reason": "STOP_LOSS",
-        "pnl": -19.296235469934107,
-        "score": 3
-      },
-      {
-        "id": 62822,
-        "dir": "SHORT",
-        "entry": 110947.62,
-        "exit": 111873.7,
-        "reason": "STOP_LOSS",
-        "pnl": -19.639120006513973,
-        "score": 4
-      },
-      {
-        "id": 63607,
-        "dir": "LONG",
-        "entry": 110493.85,
-        "exit": 109993.85,
-        "reason": "STOP_LOSS",
-        "pnl": -12.340858247417692,
-        "score": 3
-      },
-      {
-        "id": 63616,
-        "dir": "LONG",
-        "entry": 109797.27,
-        "exit": 111297.27,
-        "reason": "TAKE_PROFIT",
-        "pnl": 22.015931009577482,
-        "score": 3
-      },
-      {
-        "id": 70892,
-        "dir": "SHORT",
-        "entry": 90436.37,
-        "exit": 90436.37,
-        "reason": "STOP_LOSS",
-        "pnl": -3.7890531489872257,
-        "score": 3
-      },
-      {
-        "id": 72156,
-        "dir": "SHORT",
-        "entry": 90252.08,
-        "exit": 88752.08,
-        "reason": "TAKE_PROFIT",
-        "pnl": 27.71859284557256,
-        "score": 3
-      },
-      {
-        "id": 72990,
-        "dir": "SHORT",
-        "entry": 82544.3,
-        "exit": 83432.2,
-        "reason": "STOP_LOSS",
-        "pnl": -24.249291488239844,
-        "score": 3
-      },
-      {
-        "id": 73182,
-        "dir": "SHORT",
-        "entry": 78526.02,
-        "exit": 79219.3,
-        "reason": "STOP_LOSS",
-        "pnl": -20.531228514227074,
-        "score": 3
-      },
-      {
-        "id": 74080,
-        "dir": "SHORT",
-        "entry": 69658.33,
-        "exit": 68158.33,
-        "reason": "TAKE_PROFIT",
-        "pnl": 36.966317816740656,
-        "score": 3
-      },
-      {
-        "id": 75327,
-        "dir": "SHORT",
-        "entry": 65510.0,
-        "exit": 65510.0,
-        "reason": "STOP_LOSS",
-        "pnl": -3.7954992839915693,
-        "score": 3
-      },
-      {
-        "id": 75806,
-        "dir": "SHORT",
-        "entry": 64580.05,
-        "exit": 65460.51,
-        "reason": "STOP_LOSS",
-        "pnl": -29.682696206431363,
-        "score": 4
-      },
-      {
-        "id": 75972,
-        "dir": "SHORT",
-        "entry": 66313.0,
-        "exit": 67137.22,
-        "reason": "STOP_LOSS",
-        "pnl": -27.309970940643968,
-        "score": 4
-      }
-    ]
-  },
   "ETH/USDT": {
     "startEquity": 10000.0,
-    "finalEquity": 10260.475263149547,
-    "totalPnl": 260.47526314954536,
-    "returnPct": 2.6047526314954537,
-    "totalTrades": 19,
-    "wins": 6,
-    "losses": 13,
+    "finalEquity": 10266.156527516569,
+    "totalPnl": 266.1565275165682,
+    "returnPct": 2.661565275165682,
+    "totalTrades": 10,
+    "wins": 5,
+    "losses": 5,
     "openTrades": 0,
-    "winRate": 31.57894736842105,
-    "avgWin": 88.66976230941948,
-    "avgLoss": -20.887946977459357,
-    "profitFactor": 2.530736347593893,
-    "maxDrawdown": 1.1901247423977293,
-    "sharpe": 1.1169660535819323,
+    "winRate": 50.0,
+    "avgWin": 82.62640911859611,
+    "avgLoss": -29.395103615282487,
+    "profitFactor": 3.417143937080454,
+    "maxDrawdown": 0.7771545890668511,
+    "sharpe": 1.4657841485321048,
     "color": "#00ff9d",
     "startTime": "2024-01-01 12:30:00",
     "endTime": "2026-03-10 23:45:00",
@@ -955,145 +21,73 @@
     "equitySeries": [
       {
         "trade": 1,
-        "equity": 9996.0,
-        "reason": "STOP_LOSS"
+        "equity": 10086.5,
+        "reason": "TAKE_PROFIT"
       },
       {
         "trade": 2,
-        "equity": 9964.06,
+        "equity": 10048.03,
         "reason": "STOP_LOSS"
       },
       {
         "trade": 3,
-        "equity": 9929.9,
-        "reason": "STOP_LOSS"
+        "equity": 10134.05,
+        "reason": "TAKE_PROFIT"
       },
       {
         "trade": 4,
-        "equity": 9925.93,
+        "equity": 10086.07,
         "reason": "STOP_LOSS"
       },
       {
         "trade": 5,
-        "equity": 9891.96,
+        "equity": 10055.29,
         "reason": "STOP_LOSS"
       },
       {
         "trade": 6,
-        "equity": 9976.64,
+        "equity": 10137.3,
         "reason": "TAKE_PROFIT"
       },
       {
         "trade": 7,
-        "equity": 9923.71,
+        "equity": 10111.6,
         "reason": "STOP_LOSS"
       },
       {
         "trade": 8,
-        "equity": 9880.99,
+        "equity": 10107.56,
         "reason": "STOP_LOSS"
       },
       {
         "trade": 9,
-        "equity": 9991.97,
+        "equity": 10171.63,
         "reason": "TAKE_PROFIT"
       },
       {
         "trade": 10,
-        "equity": 9987.97,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 11,
-        "equity": 9961.86,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 12,
-        "equity": 9957.87,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 13,
-        "equity": 9932.22,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 14,
-        "equity": 9995.34,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 15,
-        "equity": 10075.59,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 16,
-        "equity": 10071.56,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 17,
-        "equity": 10165.34,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 18,
-        "equity": 10161.27,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 19,
-        "equity": 10260.48,
+        "equity": 10266.16,
         "reason": "TAKE_PROFIT"
       }
     ],
     "trades": [
       {
-        "id": 1026,
-        "dir": "LONG",
-        "entry": 2570.34,
-        "exit": 2570.34,
-        "reason": "STOP_LOSS",
-        "pnl": -4.0,
+        "id": 7551,
+        "dir": "SHORT",
+        "entry": 3318.17,
+        "exit": 3168.17,
+        "reason": "TAKE_PROFIT",
+        "pnl": 86.50169219780784,
         "score": 3
       },
       {
-        "id": 7337,
+        "id": 11687,
         "dir": "SHORT",
-        "entry": 3581.37,
-        "exit": 3631.37,
+        "entry": 2931.8050000000003,
+        "exit": 2981.8050000000003,
         "reason": "STOP_LOSS",
-        "pnl": -31.93741775019057,
-        "score": 4
-      },
-      {
-        "id": 7550,
-        "dir": "SHORT",
-        "entry": 3305.48,
-        "exit": 3355.48,
-        "reason": "STOP_LOSS",
-        "pnl": -34.159840713624234,
-        "score": 4
-      },
-      {
-        "id": 9153,
-        "dir": "SHORT",
-        "entry": 3311.55,
-        "exit": 3311.55,
-        "reason": "STOP_LOSS",
-        "pnl": -3.971961096614474,
+        "pnl": -38.47273074995699,
         "score": 3
-      },
-      {
-        "id": 9180,
-        "dir": "SHORT",
-        "entry": 3311.55,
-        "exit": 3361.55,
-        "reason": "STOP_LOSS",
-        "pnl": -33.974016259028545,
-        "score": 4
       },
       {
         "id": 31435,
@@ -1101,377 +95,89 @@
         "entry": 3344.5,
         "exit": 3494.5,
         "reason": "TAKE_PROFIT",
-        "pnl": 84.68485108786669,
+        "pnl": 86.02098215875831,
         "score": 3
       },
       {
         "id": 35965,
         "dir": "SHORT",
-        "entry": 3256.92,
+        "entry": 3266.0,
         "exit": 3336.72,
         "reason": "STOP_LOSS",
-        "pnl": -52.928434479109995,
+        "pnl": -47.98483198135381,
         "score": 3
       },
       {
-        "id": 47765,
+        "id": 55260,
         "dir": "LONG",
-        "entry": 2557.99,
-        "exit": 2507.99,
+        "entry": 3768.415,
+        "exit": 3718.415,
         "reason": "STOP_LOSS",
-        "pnl": -42.72565502907204,
-        "score": 4
-      },
-      {
-        "id": 51199,
-        "dir": "SHORT",
-        "entry": 2581.77,
-        "exit": 2431.77,
-        "reason": "TAKE_PROFIT",
-        "pnl": 110.97885579769958,
+        "pnl": -30.77240221371224,
         "score": 3
       },
       {
         "id": 55615,
         "dir": "SHORT",
-        "entry": 3503.42,
-        "exit": 3503.42,
-        "reason": "STOP_LOSS",
-        "pnl": -3.9967865526231705,
+        "entry": 3509.91,
+        "exit": 3359.91,
+        "reason": "TAKE_PROFIT",
+        "pnl": 82.00870423747402,
         "score": 3
       },
       {
-        "id": 56891,
+        "id": 56778,
         "dir": "LONG",
-        "entry": 4511.76,
-        "exit": 4461.76,
+        "entry": 4678.54,
+        "exit": 4628.54,
         "reason": "STOP_LOSS",
-        "pnl": -26.110685172546283,
+        "pnl": -25.700912931102245,
         "score": 3
       },
       {
-        "id": 57346,
-        "dir": "SHORT",
-        "entry": 4224.82,
-        "exit": 4224.82,
-        "reason": "STOP_LOSS",
-        "pnl": -3.9847435639331024,
-        "score": 4
-      },
-      {
-        "id": 58025,
+        "id": 58026,
         "dir": "LONG",
-        "entry": 4589.74,
-        "exit": 4539.74,
+        "entry": 4582.365,
+        "exit": 4582.365,
         "reason": "STOP_LOSS",
-        "pnl": -25.65739764591934,
+        "pnl": -4.044640200287167,
         "score": 3
       },
       {
         "id": 58495,
         "dir": "SHORT",
-        "entry": 4445.6,
-        "exit": 4295.6,
+        "entry": 4456.23,
+        "exit": 4306.23,
         "reason": "TAKE_PROFIT",
-        "pnl": 63.11917500789765,
-        "score": 3
-      },
-      {
-        "id": 64670,
-        "dir": "SHORT",
-        "entry": 3562.45,
-        "exit": 3412.45,
-        "reason": "TAKE_PROFIT",
-        "pnl": 80.25846947305308,
-        "score": 5
-      },
-      {
-        "id": 65887,
-        "dir": "SHORT",
-        "entry": 3207.5,
-        "exit": 3207.5,
-        "reason": "STOP_LOSS",
-        "pnl": -4.030237765241543,
+        "pnl": 64.07058545685896,
         "score": 3
       },
       {
         "id": 66081,
         "dir": "SHORT",
-        "entry": 3092.49,
-        "exit": 2942.49,
+        "entry": 3097.95,
+        "exit": 2947.95,
         "reason": "TAKE_PROFIT",
-        "pnl": 93.77252233209532,
+        "pnl": 94.53008154208145,
         "score": 3
-      },
-      {
-        "id": 66299,
-        "dir": "SHORT",
-        "entry": 2762.23,
-        "exit": 2762.23,
-        "reason": "STOP_LOSS",
-        "pnl": -4.066134679068283,
-        "score": 3
-      },
-      {
-        "id": 68892,
-        "dir": "SHORT",
-        "entry": 2954.83,
-        "exit": 2804.83,
-        "reason": "TAKE_PROFIT",
-        "pnl": 99.20470015790458,
-        "score": 4
-      }
-    ]
-  },
-  "BNB/USDT": {
-    "startEquity": 10000.0,
-    "finalEquity": 9497.374190188773,
-    "totalPnl": -502.62580981122676,
-    "returnPct": -5.026258098112268,
-    "totalTrades": 15,
-    "wins": 2,
-    "losses": 13,
-    "openTrades": 0,
-    "winRate": 13.333333333333334,
-    "avgWin": 108.12042140082383,
-    "avgLoss": -55.29743481637495,
-    "profitFactor": 0.3342880897783644,
-    "maxDrawdown": 6.060227950706467,
-    "sharpe": -2.187179922571951,
-    "color": "#ffd32a",
-    "startTime": "2024-01-01 12:30:00",
-    "endTime": "2026-03-10 23:45:00",
-    "durationDays": 0,
-    "equitySeries": [
-      {
-        "trade": 1,
-        "equity": 9914.34,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 2,
-        "equity": 9840.44,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 3,
-        "equity": 9749.81,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 4,
-        "equity": 9692.61,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 5,
-        "equity": 9635.36,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 6,
-        "equity": 9577.86,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 7,
-        "equity": 9513.54,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 8,
-        "equity": 9509.73,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 9,
-        "equity": 9475.69,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 10,
-        "equity": 9433.68,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 11,
-        "equity": 9393.98,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 12,
-        "equity": 9509.91,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 13,
-        "equity": 9610.22,
-        "reason": "TAKE_PROFIT"
-      },
-      {
-        "trade": 14,
-        "equity": 9565.28,
-        "reason": "STOP_LOSS"
-      },
-      {
-        "trade": 15,
-        "equity": 9497.37,
-        "reason": "STOP_LOSS"
-      }
-    ],
-    "trades": [
-      {
-        "id": 18206,
-        "dir": "SHORT",
-        "entry": 502.6,
-        "exit": 523.1,
-        "reason": "STOP_LOSS",
-        "pnl": -85.65738161559888,
-        "score": 2
-      },
-      {
-        "id": 19841,
-        "dir": "SHORT",
-        "entry": 567.6,
-        "exit": 587.6,
-        "reason": "STOP_LOSS",
-        "pnl": -73.90412295998792,
-        "score": 2
-      },
-      {
-        "id": 30569,
-        "dir": "LONG",
-        "entry": 645.45,
-        "exit": 616.99,
-        "reason": "STOP_LOSS",
-        "pnl": -90.62881485907282,
-        "score": 3
-      },
-      {
-        "id": 32515,
-        "dir": "LONG",
-        "entry": 730.95,
-        "exit": 710.95,
-        "reason": "STOP_LOSS",
-        "pnl": -57.200750855657425,
-        "score": 2
-      },
-      {
-        "id": 32670,
-        "dir": "LONG",
-        "entry": 725.65,
-        "exit": 705.65,
-        "reason": "STOP_LOSS",
-        "pnl": -57.25217660174661,
-        "score": 3
-      },
-      {
-        "id": 34879,
-        "dir": "LONG",
-        "entry": 717.77,
-        "exit": 697.77,
-        "reason": "STOP_LOSS",
-        "pnl": -57.49651502861728,
-        "score": 2
-      },
-      {
-        "id": 42682,
-        "dir": "LONG",
-        "entry": 632.72,
-        "exit": 612.72,
-        "reason": "STOP_LOSS",
-        "pnl": -64.32098084982294,
-        "score": 2
-      },
-      {
-        "id": 47549,
-        "dir": "LONG",
-        "entry": 662.1,
-        "exit": 662.1,
-        "reason": "STOP_LOSS",
-        "pnl": -3.805415702891798,
-        "score": 2
-      },
-      {
-        "id": 62245,
-        "dir": "LONG",
-        "entry": 1256.47,
-        "exit": 1236.47,
-        "reason": "STOP_LOSS",
-        "pnl": -34.048066840183594,
-        "score": 2
-      },
-      {
-        "id": 62340,
-        "dir": "SHORT",
-        "entry": 1121.41,
-        "exit": 1144.0,
-        "reason": "STOP_LOSS",
-        "pnl": -42.00462898690003,
-        "score": 4
-      },
-      {
-        "id": 62538,
-        "dir": "LONG",
-        "entry": 1313.03,
-        "exit": 1288.0,
-        "reason": "STOP_LOSS",
-        "pnl": -39.70394077016634,
-        "score": 3
-      },
-      {
-        "id": 62721,
-        "dir": "SHORT",
-        "entry": 1195.01,
-        "exit": 1118.9600000000003,
-        "reason": "TAKE_PROFIT",
-        "pnl": 115.92783072978209,
-        "score": 2
-      },
-      {
-        "id": 64255,
-        "dir": "SHORT",
-        "entry": 1097.16,
-        "exit": 1037.16,
-        "reason": "TAKE_PROFIT",
-        "pnl": 100.31301207186556,
-        "score": 2
-      },
-      {
-        "id": 71466,
-        "dir": "LONG",
-        "entry": 934.61,
-        "exit": 914.61,
-        "reason": "STOP_LOSS",
-        "pnl": -44.933345111403725,
-        "score": 2
-      },
-      {
-        "id": 75293,
-        "dir": "SHORT",
-        "entry": 597.64,
-        "exit": 617.64,
-        "reason": "STOP_LOSS",
-        "pnl": -67.9105124308251,
-        "score": 2
       }
     ]
   },
   "SOL/USDT": {
     "startEquity": 10000.0,
-    "finalEquity": 10253.731703565201,
-    "totalPnl": 253.73170356520137,
-    "returnPct": 2.5373170356520136,
-    "totalTrades": 2,
-    "wins": 1,
-    "losses": 1,
+    "finalEquity": 9638.917077005624,
+    "totalPnl": -361.0829229943723,
+    "returnPct": -3.610829229943723,
+    "totalTrades": 15,
+    "wins": 2,
+    "losses": 13,
     "openTrades": 0,
-    "winRate": 50.0,
-    "avgWin": 362.3938303331427,
-    "avgLoss": -108.66212676794133,
-    "profitFactor": 3.493320917612235,
-    "maxDrawdown": 1.0866212676794202,
-    "sharpe": 0.7617583664459125,
+    "winRate": 13.333333333333334,
+    "avgWin": 182.07857206891697,
+    "avgLoss": -55.787697471708185,
+    "profitFactor": 0.5512386441565997,
+    "maxDrawdown": 6.468406483932386,
+    "sharpe": -1.0026523490812054,
     "color": "#a29bfe",
     "startTime": "2024-01-01 12:30:00",
     "endTime": "2026-03-10 23:45:00",
@@ -1479,32 +185,214 @@
     "equitySeries": [
       {
         "trade": 1,
-        "equity": 9891.34,
+        "equity": 9929.55,
         "reason": "STOP_LOSS"
       },
       {
         "trade": 2,
-        "equity": 10253.73,
+        "equity": 10122.91,
+        "reason": "TAKE_PROFIT"
+      },
+      {
+        "trade": 3,
+        "equity": 10059.46,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 4,
+        "equity": 10005.88,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 5,
+        "equity": 9801.96,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 6,
+        "equity": 9752.29,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 7,
+        "equity": 9707.29,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 8,
+        "equity": 9703.4,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 9,
+        "equity": 9663.39,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 10,
+        "equity": 9582.53,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 11,
+        "equity": 9578.7,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 12,
+        "equity": 9574.87,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 13,
+        "equity": 9523.5,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 14,
+        "equity": 9468.11,
+        "reason": "STOP_LOSS"
+      },
+      {
+        "trade": 15,
+        "equity": 9638.92,
         "reason": "TAKE_PROFIT"
       }
     ],
     "trades": [
       {
-        "id": 7254,
+        "id": 6870,
         "dir": "LONG",
-        "entry": 190.9,
-        "exit": 180.9,
+        "entry": 150.33999999999997,
+        "exit": 145.33999999999997,
         "reason": "STOP_LOSS",
-        "pnl": -108.66212676794133,
+        "pnl": -70.44938140215513,
         "score": 2
       },
       {
-        "id": 15293,
-        "dir": "SHORT",
-        "entry": 162.16,
-        "exit": 132.16,
+        "id": 6967,
+        "dir": "LONG",
+        "entry": 150.81,
+        "exit": 165.81,
         "reason": "TAKE_PROFIT",
-        "pnl": 362.3938303331427,
+        "pnl": 193.35503608793482,
+        "score": 2
+      },
+      {
+        "id": 7139,
+        "dir": "LONG",
+        "entry": 170.27,
+        "exit": 165.27,
+        "reason": "STOP_LOSS",
+        "pnl": -63.44179014130752,
+        "score": 3
+      },
+      {
+        "id": 7450,
+        "dir": "LONG",
+        "entry": 202.76,
+        "exit": 197.76,
+        "reason": "STOP_LOSS",
+        "pnl": -53.58683743317195,
+        "score": 2
+      },
+      {
+        "id": 20886,
+        "dir": "SHORT",
+        "entry": 111.65,
+        "exit": 124.06,
+        "reason": "STOP_LOSS",
+        "pnl": -203.9184837719769,
+        "score": 2
+      },
+      {
+        "id": 30583,
+        "dir": "LONG",
+        "entry": 214.04,
+        "exit": 209.04,
+        "reason": "STOP_LOSS",
+        "pnl": -49.669973217354354,
+        "score": 2
+      },
+      {
+        "id": 32676,
+        "dir": "LONG",
+        "entry": 237.04500000000002,
+        "exit": 232.04500000000002,
+        "reason": "STOP_LOSS",
+        "pnl": -45.000859664593946,
+        "score": 3
+      },
+      {
+        "id": 36921,
+        "dir": "LONG",
+        "entry": 268.3,
+        "exit": 268.3,
+        "reason": "STOP_LOSS",
+        "pnl": -3.88291508418295,
+        "score": 2
+      },
+      {
+        "id": 36923,
+        "dir": "LONG",
+        "entry": 268.3,
+        "exit": 263.3,
+        "reason": "STOP_LOSS",
+        "pnl": -40.01144537166332,
+        "score": 2
+      },
+      {
+        "id": 41806,
+        "dir": "SHORT",
+        "entry": 125.63,
+        "exit": 130.63,
+        "reason": "STOP_LOSS",
+        "pnl": -80.86174947047527,
+        "score": 2
+      },
+      {
+        "id": 54559,
+        "dir": "LONG",
+        "entry": 197.46499999999997,
+        "exit": 197.46499999999997,
+        "reason": "STOP_LOSS",
+        "pnl": -3.8330126402124205,
+        "score": 2
+      },
+      {
+        "id": 56700,
+        "dir": "LONG",
+        "entry": 195.755,
+        "exit": 195.755,
+        "reason": "STOP_LOSS",
+        "pnl": -3.831479435156336,
+        "score": 2
+      },
+      {
+        "id": 62655,
+        "dir": "SHORT",
+        "entry": 201.615,
+        "exit": 206.615,
+        "reason": "STOP_LOSS",
+        "pnl": -51.36828464346728,
+        "score": 2
+      },
+      {
+        "id": 62944,
+        "dir": "SHORT",
+        "entry": 184.84,
+        "exit": 189.84,
+        "reason": "STOP_LOSS",
+        "pnl": -55.383854856488895,
+        "score": 2
+      },
+      {
+        "id": 64666,
+        "dir": "SHORT",
+        "entry": 162.85500000000002,
+        "exit": 147.85500000000002,
+        "reason": "TAKE_PROFIT",
+        "pnl": 170.80210804989915,
         "score": 3
       }
     ]
