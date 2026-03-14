@@ -83,13 +83,12 @@ def score_setup(
         return None
 
     # --- ATR Exhaustion Filter ---
-    # We use average candle range over the last 20 candles
+    # Relaxed: Only reject extreme parabolic moves (5x average)
     avg_candle_range = (df_mtf['high'] - df_mtf['low']).rolling(20).mean()
     current_range = df_mtf['high'].iloc[-1] - df_mtf['low'].iloc[-1]
-    multiplier = getattr(settings, 'ATR_EXHAUSTION_MULTIPLIER', 2.0)
     
-    if len(avg_candle_range) >= 2 and current_range > multiplier * avg_candle_range.iloc[-2]:
-        return None  # Exhausted move, skip
+    if len(avg_candle_range) >= 2 and current_range > 5.0 * avg_candle_range.iloc[-2]:
+        return None  
 
     # --- Momentum Confirmation Filter ---
     # Reject only if the structure has genuinely broken down
@@ -98,12 +97,12 @@ def score_setup(
         if direction == "LONG":
             reference_low = df_mtf['low'].iloc[-25:-5].min()
             last_5_lows = df_mtf['low'].iloc[-5:]
-            if (last_5_lows < reference_low * 0.998).any():
+            if (last_5_lows < reference_low * 0.993).any():
                 return None  # Recent candles broke established structure
         elif direction == "SHORT":
             reference_high = df_mtf['high'].iloc[-25:-5].max()
             last_5_highs = df_mtf['high'].iloc[-5:]
-            if (last_5_highs > reference_high * 1.002).any():
+            if (last_5_highs > reference_high * 1.007).any():
                 return None  # Recent candles broke established structure
 
     confluences.append(f"HTF Bias: {bias['structure']} in {bias['zone']}")
@@ -117,11 +116,11 @@ def score_setup(
     for fvg in relevant_fvgs:
         if direction == "LONG":
             dist = (current_price - fvg.midpoint) / pip_value
-            if 0 < dist <= 20:
+            if 0 < dist <= 40:
                 near_fvgs.append(fvg)
         else:
             dist = (fvg.midpoint - current_price) / pip_value
-            if 0 < dist <= 20:
+            if 0 < dist <= 40:
                 near_fvgs.append(fvg)
     
     if near_fvgs:
@@ -137,11 +136,11 @@ def score_setup(
     for ob in relevant_obs:
         if direction == "LONG":
             dist = (current_price - ob.top) / pip_value
-            if 0 < dist <= 15:
+            if 0 < dist <= 30:
                 near_obs.append(ob)
         else:
             dist = (ob.bottom - current_price) / pip_value
-            if 0 < dist <= 15:
+            if 0 < dist <= 30:
                 near_obs.append(ob)
     
     if near_obs:

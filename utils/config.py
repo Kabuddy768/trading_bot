@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     MIN_CONFLUENCES: int = 2         # Minimum confluences required to enter
     MIN_CONFLUENCES_BY_SYMBOL: dict = {
         "ETH/USDT": 3,
-        "SOL/USDT": 2,
+        "SOL/USDT": 3,
     }
     MAX_CONFLUENCES_BY_SYMBOL: dict = {
         "ETH/USDT": 3,
